@@ -17,6 +17,48 @@ body{
   min-height:100vh;padding:28px 80px;
 }
 
+/* ── TOC PANEL (buiten het boek) ── */
+#tocPanel{
+  position:fixed;left:20px;top:50%;transform:translateY(-50%);
+  width:210px;max-height:75vh;
+  background:linear-gradient(160deg,rgba(28,14,6,.97) 0%,rgba(38,20,10,.97) 100%);
+  border:1px solid rgba(201,168,76,.35);
+  border-radius:8px;padding:14px 12px 12px;
+  z-index:40;display:flex;flex-direction:column;gap:8px;
+  box-shadow:0 8px 32px rgba(0,0,0,.7),inset 0 1px 0 rgba(201,168,76,.15);
+}
+#tocPanel::before{
+  content:'';position:absolute;inset:0;border-radius:8px;
+  background:linear-gradient(180deg,rgba(201,168,76,.04) 0%,transparent 40%);
+  pointer-events:none;
+}
+.toc-p-title{
+  font-family:'Playfair Display',serif;font-size:12px;color:var(--gold);
+  text-transform:uppercase;letter-spacing:.1em;
+  padding-bottom:8px;border-bottom:1px solid rgba(201,168,76,.25);
+  display:flex;align-items:center;gap:6px;flex-shrink:0;
+}
+.toc-p-search{
+  padding:5px 9px;border:1px solid rgba(201,168,76,.2);border-radius:10px;
+  background:rgba(255,255,255,.05);font-family:'Lato',sans-serif;
+  font-size:11px;color:rgba(255,255,255,.7);outline:none;transition:border-color .2s;
+  flex-shrink:0;
+}
+.toc-p-search::placeholder{color:rgba(255,255,255,.3)}
+.toc-p-search:focus{border-color:rgba(201,168,76,.5)}
+.toc-p-list{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,.2) transparent;display:flex;flex-direction:column;gap:1px}
+.toc-p-entry{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 7px;border-radius:5px;cursor:pointer;
+  transition:background .15s;
+}
+.toc-p-entry:hover{background:rgba(201,168,76,.1)}
+.toc-p-entry.active{background:rgba(201,168,76,.15);border-left:2px solid var(--gold);padding-left:5px}
+.toc-p-num{font-size:10px;color:var(--gold);font-weight:700;min-width:16px;flex-shrink:0}
+.toc-p-name{font-family:'Playfair Display',serif;font-size:11px;color:rgba(240,220,190,.85);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3}
+.toc-p-entry.active .toc-p-name{color:var(--gold)}
+.toc-p-empty{font-style:italic;font-size:11px;color:rgba(255,255,255,.3);padding:6px 0;text-align:center}
+
 :root{
   --paper:#F5F0E8;--paper-dark:#E8E0D0;--paper-mid:#EDE5D5;
   --ink:#2C1810;--ink-light:#6B4A32;--ink-muted:#9C7B60;
@@ -116,42 +158,6 @@ body{
 .cover-back{width:100%;height:100%;background:var(--paper-dark);display:flex;align-items:center;justify-content:center}
 .cover-back-decor{width:70%;height:70%;border:1px solid var(--gold);opacity:.12;border-radius:2px}
 
-/* ── COMPACT TOC STRIP (top of left page) ── */
-.toc-strip{
-  flex-shrink:0;
-  border-bottom:2px solid var(--gold);
-  padding:10px 16px 8px;
-  background:var(--paper-dark);
-  max-height:42%;
-  display:flex;flex-direction:column;
-  overflow:hidden;
-}
-.toc-strip-head{
-  display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-shrink:0;
-}
-.toc-strip-title{
-  font-family:'Playfair Display',serif;font-size:12px;color:var(--accent);
-  text-transform:uppercase;letter-spacing:.08em;flex:1;
-}
-.toc-strip-search{
-  padding:3px 7px;border:1px solid var(--paper-dark);border-radius:10px;
-  background:var(--paper-mid);font-size:11px;color:var(--ink);outline:none;
-  width:120px;transition:border-color .2s;
-}
-.toc-strip-search:focus{border-color:var(--accent)}
-.toc-strip-list{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:var(--paper-dark) transparent}
-.toc-entry{
-  display:flex;align-items:baseline;gap:4px;padding:3px 0;
-  border-bottom:1px solid rgba(0,0,0,.06);cursor:pointer;transition:color .15s;
-}
-.toc-entry:last-child{border-bottom:none}
-.toc-entry:hover .toc-e-name{color:var(--accent)}
-.toc-e-num{font-size:10px;color:var(--accent);font-weight:700;min-width:18px}
-.toc-e-name{font-family:'Playfair Display',serif;font-size:11px;color:var(--ink);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.toc-e-dots{flex:0 1 30px;border-bottom:1px dotted var(--ink-muted);margin:0 4px;align-self:center;min-width:8px}
-.toc-e-pg{font-size:10px;color:var(--ink-muted);min-width:20px;text-align:right}
-.toc-e-active .toc-e-name{color:var(--accent);font-weight:700}
-.toc-empty{font-style:italic;font-size:11px;color:var(--ink-muted);padding:4px 0}
 
 /* ── LEFT PAGE: RECIPE INFO ── */
 .recipe-info{
@@ -341,6 +347,12 @@ input[type=number]{-moz-appearance:textfield}
 </style>
 </head>
 <body>
+
+<div id="tocPanel">
+  <div class="toc-p-title">📚 Inhoudsopgave</div>
+  <input class="toc-p-search" id="tocPanelSearch" placeholder="Zoek recept…">
+  <div class="toc-p-list" id="tocPanelList"><div class="toc-p-empty">Nog geen recepten.</div></div>
+</div>
 
 <div class="book" id="book">
   <button class="nav-arrow prev" id="prevBtn" disabled>◀</button>
@@ -551,6 +563,7 @@ function render(){
     // Cover spread
     pL.innerHTML=`<div class="cover-back"><div class="cover-back-decor"></div></div>`;
     pR.innerHTML=coverHTML();
+    updateTOCPanel(null);
     bindCover();
   } else {
     const ri=recipeIndexForSpread(spreadIdx);
@@ -558,6 +571,7 @@ function render(){
     if(!r){pL.innerHTML='';pR.innerHTML='';return;}
     pL.innerHTML=leftPageHTML(r, spreadIdx*2);
     pR.innerHTML=rightPageHTML(r, spreadIdx*2+1);
+    updateTOCPanel(r.id);
     bindPage(r);
   }
 }
@@ -584,19 +598,34 @@ function bindCover(){
   });
 }
 
-// ── LEFT PAGE: compact TOC + recipe info ──────────────────────
-function leftPageHTML(r, pgn){
-  // Compact TOC
-  const tocItems=recipes.map((rec,i)=>{
-    const active=rec.id===r.id;
-    return`<div class="toc-entry${active?' toc-e-active':''}" data-s="${i+1}">
-      <span class="toc-e-num">${i+1}</span>
-      <span class="toc-e-name">${x(rec.title)}</span>
-      <span class="toc-e-dots"></span>
-      <span class="toc-e-pg">${(i+1)*2+1}</span>
-    </div>`;
-  }).join('');
+// ── TOC PANEL (buiten het boek) ───────────────────────────────
+function updateTOCPanel(activeId){
+  const list=document.getElementById('tocPanelList');
+  if(!list) return;
+  if(!recipes.length){list.innerHTML='<div class="toc-p-empty">Nog geen recepten.</div>';return;}
+  list.innerHTML=recipes.map((r,i)=>`
+    <div class="toc-p-entry${r.id===activeId?' active':''}" data-s="${i+1}">
+      <span class="toc-p-num">${i+1}</span>
+      <span class="toc-p-name">${x(r.title)}</span>
+    </div>`).join('');
+  list.querySelectorAll('.toc-p-entry[data-s]').forEach(el=>{
+    el.addEventListener('click',()=>goTo(parseInt(el.dataset.s)));
+  });
+  // search
+  const search=document.getElementById('tocPanelSearch');
+  if(search){
+    search.oninput=null;
+    search.addEventListener('input',e=>{
+      const q=e.target.value.toLowerCase();
+      list.querySelectorAll('.toc-p-entry').forEach(el=>{
+        el.style.display=el.querySelector('.toc-p-name').textContent.toLowerCase().includes(q)?'':'none';
+      });
+    });
+  }
+}
 
+// ── LEFT PAGE: recipe info ─────────────────────────────────────
+function leftPageHTML(r, pgn){
   // Equipment chips
   const chips=(r.equipment||[]).map(e=>
     `<div class="chip">${eqEmoji(e)} ${x(e)}<button class="chip-x" data-rid="${r.id}" data-eq="${x(e)}">✕</button></div>`
@@ -613,16 +642,6 @@ function leftPageHTML(r, pgn){
   ).join('');
 
   return`
-    <div class="toc-strip" id="toc-strip-${r.id}">
-      <div class="toc-strip-head">
-        <span class="toc-strip-title">📚 Inhoudsopgave</span>
-        <input class="toc-strip-search" id="tocSearch" placeholder="Zoek…">
-      </div>
-      <div class="toc-strip-list" id="tocList">
-        ${tocItems||'<div class="toc-empty">Nog geen recepten.</div>'}
-      </div>
-    </div>
-
     <div class="recipe-info" id="rinfo-${r.id}">
       <div class="rec-title-area">
         <input class="recipe-title-inp" value="${x(r.title)}" placeholder="Naam van het recept…" data-rid="${r.id}">
@@ -757,18 +776,6 @@ function bindPage(r){
   requestAnimationFrame(()=>{
     drawDonut(rid,calcNutr(r.ingredients||[]),r.portions||1);
 
-    // TOC search
-    document.getElementById('tocSearch')?.addEventListener('input',e=>{
-      const q=e.target.value.toLowerCase();
-      document.querySelectorAll('.toc-entry[data-s]').forEach(el=>{
-        el.style.display=el.querySelector('.toc-e-name').textContent.toLowerCase().includes(q)?'':'none';
-      });
-    });
-    // TOC navigation
-    document.querySelectorAll('.toc-entry[data-s]').forEach(el=>{
-      el.addEventListener('click',()=>goTo(parseInt(el.dataset.s)));
-    });
-
     // Title
     document.querySelector(`.recipe-title-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
       getR(rid).title=e.target.value.trim()||'Naamloos';save();
@@ -896,13 +903,12 @@ function bindSteps(r){
 
 // Partial refreshes
 function refreshLeft(r){
-  const strip=document.getElementById(`toc-strip-${r.id}`);
-  const info =document.getElementById(`rinfo-${r.id}`);
-  if(strip&&info){
+  const info=document.getElementById(`rinfo-${r.id}`);
+  if(info){
     const tmp=document.createElement('div');
     tmp.innerHTML=leftPageHTML(r,spreadIdx*2);
-    strip.outerHTML=tmp.querySelector(`#toc-strip-${r.id}`).outerHTML;
-    info.outerHTML =tmp.querySelector(`#rinfo-${r.id}`).outerHTML;
+    info.outerHTML=tmp.querySelector(`#rinfo-${r.id}`).outerHTML;
+    updateTOCPanel(r.id);
     bindPage(r);
   }
 }
