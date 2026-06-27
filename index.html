@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kookboek</title>
+  <style>
+    :root {
+      --bg: #faf7f2;
+      --bg2: #ffffff;
+      --bg3: #f0ebe3;
+      --border: #e0d8cc;
+      --text: #2c2416;
+      --text2: #6b5e4c;
+      --text3: #9c8b78;
+      --accent: #d4622a;
+      --accent-h: #b8501f;
+      --accent-light: #fdf0eb;
+      --green: #4a7c59;
+      --green-light: #edf5f0;
+      --shadow: 0 2px 8px rgba(0,0,0,.08);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+    [data-theme="dark"] {
+      --bg: #1a1610;
+      --bg2: #242018;
+      --bg3: #2e2820;
+      --border: #3d3528;
+      --text: #f0e8dc;
+      --text2: #b8a890;
+      --text3: #7a6e60;
+      --accent: #e07040;
+      --accent-h: #d4622a;
+      --accent-light: #2e1e12;
+      --green: #5a9c6e;
+      --green-light: #162018;
+      --shadow: 0 2px 8px rgba(0,0,0,.3);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: 60px;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo span { font-size: 26px; }
+    .search-wrap {
+      flex: 1;
+      max-width: 400px;
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 8px 14px 8px 36px;
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      background: var(--bg3);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap { position: relative; }
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text3);
+      font-size: 14px;
+      pointer-events: none;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+    .btn {
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all .15s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--accent-h); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text2);
+      border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg3); color: var(--text); }
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--text2);
+    }
+    .btn-icon:hover { background: var(--border); color: var(--text); }
+
+    /* FILTER BAR */
+    .filter-bar {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+    }
+    .filter-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 10px 0;
+      scrollbar-width: none;
+    }
+    .filter-inner::-webkit-scrollbar { display: none; }
+    .cat-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      white-space: nowrap;
+      transition: all .15s;
+    }
+    .cat-btn:hover { background: var(--bg3); color: var(--text); }
+    .cat-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* MAIN */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .stats-bar span { color: var(--text3); font-size: 14px; }
+    .view-toggle { display: flex; gap: 4px; }
+    .view-btn {
+      width: 32px;
+      height: 32px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .view-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* GRID */
+    .recipe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .recipe-grid.list-view {
+      grid-template-columns: 1fr;
+    }
+
+    /* RECIPE CARD */
+    .recipe-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+      box-shadow: var(--shadow);
+    }
+    .recipe-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .card-img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      background: var(--bg3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 56px;
+    }
+    .card-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .card-body { padding: 14px 16px 16px; }
+    .card-cat {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 8px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .card-meta {
+      display: flex;
+      gap: 14px;
+      color: var(--text3);
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    .card-meta span { display: flex; align-items: center; gap: 4px; }
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .tag {
+      padding: 2px 8px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 11px;
+      color: var(--text2);
+    }
+
+    /* List view card */
+    .recipe-grid.list-view .recipe-card {
+      display: flex;
+      height: 100px;
+    }
+    .recipe-grid.list-view .card-img {
+      width: 100px;
+      min-width: 100px;
+      height: 100%;
+      font-size: 36px;
+    }
+    .recipe-grid.list-view .card-body {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 16px;
+      flex: 1;
+      min-width: 0;
+    }
+    .recipe-grid.list-view .card-title {
+      margin-bottom: 0;
+      flex: 1;
+      font-size: 15px;
+    }
+    .recipe-grid.list-view .card-cat { margin-bottom: 0; }
+    .recipe-grid.list-view .card-tags { display: none; }
+
+    /* EMPTY STATE */
+    .empty {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text3);
+    }
+    .empty div { font-size: 56px; margin-bottom: 12px; }
+    .empty p { font-size: 16px; margin-bottom: 20px; }
+
+    /* MODAL OVERLAY */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .overlay.open { display: flex; }
+
+    /* MODAL */
+    .modal {
+      background: var(--bg2);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 620px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+    }
+    .modal-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: var(--bg2);
+      z-index: 1;
+    }
+    .modal-header h2 { font-size: 18px; font-weight: 700; }
+    .btn-close {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: var(--bg3);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-close:hover { background: var(--border); color: var(--text); }
+    .modal-body { padding: 20px 24px; }
+    .modal-footer {
+      padding: 16px 24px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    /* FORM */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-group:last-child { margin-bottom: 0; }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text2);
+      margin-bottom: 5px;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="url"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg3);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+    select { cursor: pointer; }
+    textarea { resize: vertical; min-height: 100px; }
+
+    /* DETAIL MODAL */
+    .detail-img {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      background: var(--bg3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 80px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .detail-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .detail-meta {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg3);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .meta-item strong { color: var(--text); }
+    .meta-item span { color: var(--text3); font-size: 12px; }
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text3);
+      margin-bottom: 10px;
+      margin-top: 20px;
+    }
+    .section-label:first-of-type { margin-top: 0; }
+    .ingredienten-block {
+      background: var(--bg3);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      white-space: pre-wrap;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .bereiding-block {
+      white-space: pre-wrap;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text);
+    }
+    .detail-footer-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .btn-danger {
+      background: transparent;
+      color: #c0392b;
+      border: 1.5px solid #c0392b;
+    }
+    .btn-danger:hover { background: #fdf0ef; }
+
+    /* STATUS TOAST */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--text);
+      color: var(--bg);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 999;
+      transition: transform .3s ease;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* LOADING */
+    .loading {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 60px;
+      color: var(--text3);
+      font-size: 14px;
+    }
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Category colors */
+    .cat-ontbijt { background: #fff3cd; color: #856404; }
+    .cat-lunch { background: #d4edda; color: #155724; }
+    .cat-diner { background: #cce5ff; color: #004085; }
+    .cat-dessert { background: #f8d7da; color: #721c24; }
+    .cat-snack { background: #e2d9f3; color: #4a0e8f; }
+    .cat-drank { background: #d1ecf1; color: #0c5460; }
+    .cat-andere { background: var(--bg3); color: var(--text2); }
+    [data-theme="dark"] .cat-ontbijt { background: #3a2c00; color: #ffc947; }
+    [data-theme="dark"] .cat-lunch { background: #0d2e15; color: #5cbf7a; }
+    [data-theme="dark"] .cat-diner { background: #002040; color: #5aadff; }
+    [data-theme="dark"] .cat-dessert { background: #2e0a0c; color: #e07a82; }
+    [data-theme="dark"] .cat-snack { background: #1e0c38; color: #b08aec; }
+    [data-theme="dark"] .cat-drank { background: #002428; color: #5acfdc; }
+    [data-theme="dark"] .cat-andere { background: var(--bg3); color: var(--text2); }
+
+    @media (max-width: 640px) {
+      .logo { font-size: 18px; }
+      .header-inner { gap: 10px; height: 54px; }
+      header { padding: 0 12px; }
+      .filter-bar { padding: 0 12px; }
+      main { padding: 16px 12px; }
+      .form-row { grid-template-columns: 1fr; }
+      .modal { max-height: 95vh; }
+      .detail-meta { gap: 10px; }
+      .recipe-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .card-img { height: 140px; }
+    }
+
+    @media (max-width: 400px) {
+      .recipe-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body data-theme="light">
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <div class="logo"><span>🍳</span> Kookboek</div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Zoek recept of ingrediënt…">
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" id="themeBtn" title="Thema wisselen">🌙</button>
+      <button class="btn btn-primary" id="addBtn">+ Recept</button>
+    </div>
+  </div>
+</header>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="filter-inner">
+    <button class="cat-btn active" data-cat="">Alle recepten</button>
+    <button class="cat-btn" data-cat="ontbijt">🥞 Ontbijt</button>
+    <button class="cat-btn" data-cat="lunch">🥗 Lunch</button>
+    <button class="cat-btn" data-cat="diner">🍽️ Diner</button>
+    <button class="cat-btn" data-cat="dessert">🍰 Dessert</button>
+    <button class="cat-btn" data-cat="snack">🥨 Snack</button>
+    <button class="cat-btn" data-cat="drank">🥤 Drank</button>
+    <button class="cat-btn" data-cat="andere">📌 Andere</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main>
+  <div class="stats-bar">
+    <span id="statsText">Laden…</span>
+    <div class="view-toggle">
+      <button class="view-btn active" id="gridViewBtn" title="Rasterweergave">⊞</button>
+      <button class="view-btn" id="listViewBtn" title="Lijstweergave">☰</button>
+    </div>
+  </div>
+  <div class="recipe-grid" id="recipeGrid">
+    <div class="loading"><div class="spinner"></div>Recepten laden…</div>
+  </div>
+</main>
+
+<!-- ADD/EDIT MODAL -->
+<div class="overlay" id="formOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="formTitle">Nieuw recept</h2>
+      <button class="btn-close" id="formClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+
+      <div class="form-group">
+        <label for="fNaam">Naam van het recept *</label>
+        <input type="text" id="fNaam" placeholder="bv. Spaghetti carbonara" maxlength="120">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0">
+          <label for="fCategorie">Categorie *</label>
+          <select id="fCategorie">
+            <option value="">— Kies categorie —</option>
+            <option value="ontbijt">🥞 Ontbijt</option>
+            <option value="lunch">🥗 Lunch</option>
+            <option value="diner">🍽️ Diner</option>
+            <option value="dessert">🍰 Dessert</option>
+            <option value="snack">🥨 Snack</option>
+            <option value="drank">🥤 Drank</option>
+            <option value="andere">📌 Andere</option>
+          </select>
+        </div>
+        <div class="form-row" style="gap:10px;margin-bottom:0;align-items:end">
+          <div class="form-group" style="margin-bottom:0">
+            <label for="fTijd">Bereidingstijd</label>
+            <input type="number" id="fTijd" placeholder="min" min="1" max="999">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label for="fPorties">Porties</label>
+            <input type="number" id="fPorties" placeholder="pers." min="1" max="99">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="fFoto">Foto-URL (optioneel)</label>
+        <input type="url" id="fFoto" placeholder="https://…">
+      </div>
+
+      <div class="form-group">
+        <label for="fTags">Tags (komma-gescheiden, optioneel)</label>
+        <input type="text" id="fTags" placeholder="bv. pasta, snel, vegetarisch">
+      </div>
+
+      <div class="form-group">
+        <label for="fIngredienten">Ingrediënten *</label>
+        <textarea id="fIngredienten" placeholder="Eén ingrediënt per lijn&#10;bv. 400g spaghetti&#10;200g spek&#10;4 eieren" rows="6"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="fBereiding">Bereidingswijze *</label>
+        <textarea id="fBereiding" placeholder="Beschrijf stap voor stap hoe je het gerecht bereidt…" rows="8"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="formCancel">Annuleren</button>
+      <button class="btn btn-primary" id="formSave">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <div>
+        <div id="detailCat" class="card-cat" style="margin-bottom:4px"></div>
+        <h2 id="detailNaam"></h2>
+      </div>
+      <button class="btn-close" id="detailClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-img" id="detailImgWrap"></div>
+
+      <div class="detail-meta" id="detailMeta"></div>
+
+      <div id="detailTagsWrap"></div>
+
+      <div class="section-label">Ingrediënten</div>
+      <div class="ingredienten-block" id="detailIngredienten"></div>
+
+      <div class="section-label">Bereidingswijze</div>
+      <div class="bereiding-block" id="detailBereiding"></div>
+    </div>
+    <div class="modal-footer">
+      <div class="detail-footer-actions">
+        <button class="btn btn-danger" id="detailDelete">Verwijderen</button>
+      </div>
+      <button class="btn btn-ghost" id="detailClose2">Sluiten</button>
+      <button class="btn btn-primary" id="detailEdit">Bewerken</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE + APP LOGIC -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+  import { getDatabase, ref, push, set, remove, onValue, update }
+    from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
+
+  // ======================================================
+  // FIREBASE CONFIG — vervang met jouw eigen gegevens!
+  // ======================================================
+  const firebaseConfig = {
+    apiKey:            "AIzaSyDbstFROsViJj4CwWinPCiQMvu5ezn4W7k",
+    authDomain:        "kookboek-55db9.firebaseapp.com",
+    databaseURL:       "https://kookboek-55db9-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:         "kookboek-55db9",
+    storageBucket:     "kookboek-55db9.firebasestorage.app",
+    messagingSenderId: "453300208065",
+    appId:             "1:453300208065:web:12ad3b9b924d97dcef2f40"
+  };
+  // ======================================================
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  const dbRef = ref(db, "recepten");
+
+  // --- STATE ---
+  let alleRecepten = {};
+  let huidigeCat   = "";
+  let zoekTerm     = "";
+  let lijstView    = false;
+  let detailId     = null;
+
+  // --- THEME ---
+  const body = document.body;
+  const themeBtn = document.getElementById("themeBtn");
+  const savedTheme = localStorage.getItem("kb_theme") || "light";
+  body.dataset.theme = savedTheme;
+  themeBtn.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+  themeBtn.onclick = () => {
+    const next = body.dataset.theme === "dark" ? "light" : "dark";
+    body.dataset.theme = next;
+    localStorage.setItem("kb_theme", next);
+    themeBtn.textContent = next === "dark" ? "☀️" : "🌙";
+  };
+
+  // --- VIEW TOGGLE ---
+  document.getElementById("gridViewBtn").onclick = () => setView(false);
+  document.getElementById("listViewBtn").onclick = () => setView(true);
+  function setView(list) {
+    lijstView = list;
+    document.getElementById("recipeGrid").classList.toggle("list-view", list);
+    document.getElementById("gridViewBtn").classList.toggle("active", !list);
+    document.getElementById("listViewBtn").classList.toggle("active", list);
+  }
+
+  // --- CATEGORY FILTER ---
+  document.querySelectorAll(".cat-btn").forEach(btn => {
+    btn.onclick = () => {
+      huidigeCat = btn.dataset.cat;
+      document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderRecepten();
+    };
+  });
+
+  // --- SEARCH ---
+  document.getElementById("searchInput").addEventListener("input", e => {
+    zoekTerm = e.target.value.toLowerCase().trim();
+    renderRecepten();
+  });
+
+  // --- FIREBASE LISTENER ---
+  onValue(dbRef, snap => {
+    alleRecepten = snap.val() || {};
+    renderRecepten();
+  });
+
+  // --- RENDER ---
+  function renderRecepten() {
+    const grid = document.getElementById("recipeGrid");
+    let items = Object.entries(alleRecepten);
+
+    if (huidigeCat) items = items.filter(([,r]) => r.categorie === huidigeCat);
+    if (zoekTerm)   items = items.filter(([,r]) =>
+      (r.naam||"").toLowerCase().includes(zoekTerm) ||
+      (r.ingredienten||"").toLowerCase().includes(zoekTerm) ||
+      (r.tags||"").toLowerCase().includes(zoekTerm)
+    );
+
+    // Sort: newest first
+    items.sort(([,a],[,b]) => (b.aangemaakt||0) - (a.aangemaakt||0));
+
+    const totaal = Object.keys(alleRecepten).length;
+    document.getElementById("statsText").textContent =
+      zoekTerm || huidigeCat
+        ? `${items.length} van ${totaal} recept${totaal !== 1 ? "en" : ""}`
+        : `${totaal} recept${totaal !== 1 ? "en" : ""}`;
+
+    if (!items.length) {
+      grid.innerHTML = `<div class="empty">
+        <div>${zoekTerm ? "🔍" : "🍽️"}</div>
+        <p>${zoekTerm ? `Geen recepten gevonden voor "${zoekTerm}"` : "Nog geen recepten. Voeg je eerste recept toe!"}</p>
+        ${!zoekTerm ? `<button class="btn btn-primary" onclick="document.getElementById('addBtn').click()">+ Recept toevoegen</button>` : ""}
+      </div>`;
+      return;
+    }
+
+    grid.innerHTML = items.map(([id, r]) => kaartHTML(id, r)).join("");
+    grid.querySelectorAll(".recipe-card").forEach(card => {
+      card.onclick = () => openDetail(card.dataset.id);
+    });
+  }
+
+  function kaartHTML(id, r) {
+    const catClass = `cat-${r.categorie || "andere"}`;
+    const catLabel = catNaam(r.categorie);
+    const imgHTML  = r.foto
+      ? `<div class="card-img"><img src="${escHTML(r.foto)}" alt="${escHTML(r.naam)}" onerror="this.parentElement.textContent='${catEmoji(r.categorie)}'"></div>`
+      : `<div class="card-img">${catEmoji(r.categorie)}</div>`;
+    const metaHTML = [
+      r.bereidingstijd ? `<span>⏱ ${r.bereidingstijd} min</span>` : "",
+      r.porties        ? `<span>👤 ${r.porties} pers.</span>`      : "",
+    ].filter(Boolean).join("");
+    const tagsHTML = r.tags
+      ? r.tags.split(",").map(t => t.trim()).filter(Boolean).slice(0,3)
+          .map(t => `<span class="tag">${escHTML(t)}</span>`).join("")
+      : "";
+    return `<div class="recipe-card" data-id="${id}">
+      ${imgHTML}
+      <div class="card-body">
+        <span class="card-cat ${catClass}">${catLabel}</span>
+        <div class="card-title">${escHTML(r.naam)}</div>
+        ${metaHTML ? `<div class="card-meta">${metaHTML}</div>` : ""}
+        ${tagsHTML  ? `<div class="card-tags">${tagsHTML}</div>` : ""}
+      </div>
+    </div>`;
+  }
+
+  // --- DETAIL MODAL ---
+  function openDetail(id) {
+    detailId = id;
+    const r = alleRecepten[id];
+    if (!r) return;
+
+    const catClass = `cat-${r.categorie || "andere"}`;
+    document.getElementById("detailNaam").textContent = r.naam;
+    const catEl = document.getElementById("detailCat");
+    catEl.textContent = catNaam(r.categorie);
+    catEl.className = `card-cat ${catClass}`;
+
+    const imgWrap = document.getElementById("detailImgWrap");
+    if (r.foto) {
+      imgWrap.innerHTML = `<img src="${escHTML(r.foto)}" alt="${escHTML(r.naam)}"
+        onerror="this.parentElement.textContent='${catEmoji(r.categorie)}'">`;
+    } else {
+      imgWrap.textContent = catEmoji(r.categorie);
+    }
+
+    const metaItems = [
+      r.bereidingstijd ? `<div class="meta-item"><strong>⏱ ${r.bereidingstijd}</strong><span>minuten</span></div>` : "",
+      r.porties        ? `<div class="meta-item"><strong>👤 ${r.porties}</strong><span>personen</span></div>`       : "",
+    ].filter(Boolean).join("");
+    document.getElementById("detailMeta").innerHTML = metaItems;
+
+    const tagsWrap = document.getElementById("detailTagsWrap");
+    if (r.tags) {
+      const tagsHTML = r.tags.split(",").map(t => t.trim()).filter(Boolean)
+        .map(t => `<span class="tag">${escHTML(t)}</span>`).join("");
+      tagsWrap.innerHTML = `<div class="card-tags" style="margin-bottom:16px">${tagsHTML}</div>`;
+    } else {
+      tagsWrap.innerHTML = "";
+    }
+
+    document.getElementById("detailIngredienten").textContent = r.ingredienten || "";
+    document.getElementById("detailBereiding").textContent    = r.bereiding    || "";
+
+    document.getElementById("detailOverlay").classList.add("open");
+  }
+
+  document.getElementById("detailClose").onclick  = closeDetail;
+  document.getElementById("detailClose2").onclick = closeDetail;
+  document.getElementById("detailOverlay").onclick = e => { if (e.target === e.currentTarget) closeDetail(); };
+  function closeDetail() {
+    document.getElementById("detailOverlay").classList.remove("open");
+    detailId = null;
+  }
+
+  document.getElementById("detailEdit").onclick = () => {
+    if (!detailId) return;
+    closeDetail();
+    openForm(detailId);
+  };
+
+  document.getElementById("detailDelete").onclick = () => {
+    if (!detailId) return;
+    const naam = alleRecepten[detailId]?.naam || "dit recept";
+    if (!confirm(`Weet je zeker dat je "${naam}" wilt verwijderen?`)) return;
+    remove(ref(db, `recepten/${detailId}`));
+    closeDetail();
+    toast("Recept verwijderd");
+  };
+
+  // --- FORM MODAL ---
+  document.getElementById("addBtn").onclick    = () => openForm(null);
+  document.getElementById("formClose").onclick  = closeForm;
+  document.getElementById("formCancel").onclick = closeForm;
+  document.getElementById("formOverlay").onclick = e => { if (e.target === e.currentTarget) closeForm(); };
+
+  function openForm(id) {
+    const r = id ? alleRecepten[id] : null;
+    document.getElementById("formTitle").textContent = r ? "Recept bewerken" : "Nieuw recept";
+    document.getElementById("editId").value          = id || "";
+    document.getElementById("fNaam").value           = r?.naam           || "";
+    document.getElementById("fCategorie").value      = r?.categorie      || "";
+    document.getElementById("fTijd").value           = r?.bereidingstijd || "";
+    document.getElementById("fPorties").value        = r?.porties        || "";
+    document.getElementById("fFoto").value           = r?.foto           || "";
+    document.getElementById("fTags").value           = r?.tags           || "";
+    document.getElementById("fIngredienten").value   = r?.ingredienten   || "";
+    document.getElementById("fBereiding").value      = r?.bereiding      || "";
+    document.getElementById("formOverlay").classList.add("open");
+    document.getElementById("fNaam").focus();
+  }
+
+  function closeForm() {
+    document.getElementById("formOverlay").classList.remove("open");
+  }
+
+  document.getElementById("formSave").onclick = async () => {
+    const naam        = document.getElementById("fNaam").value.trim();
+    const categorie   = document.getElementById("fCategorie").value;
+    const ingredienten = document.getElementById("fIngredienten").value.trim();
+    const bereiding   = document.getElementById("fBereiding").value.trim();
+
+    if (!naam)         { alert("Vul een naam in."); document.getElementById("fNaam").focus(); return; }
+    if (!categorie)    { alert("Kies een categorie."); document.getElementById("fCategorie").focus(); return; }
+    if (!ingredienten) { alert("Vul de ingrediënten in."); document.getElementById("fIngredienten").focus(); return; }
+    if (!bereiding)    { alert("Vul de bereidingswijze in."); document.getElementById("fBereiding").focus(); return; }
+
+    const data = {
+      naam,
+      categorie,
+      ingredienten,
+      bereiding,
+      bereidingstijd: parseInt(document.getElementById("fTijd").value)    || null,
+      porties:        parseInt(document.getElementById("fPorties").value)  || null,
+      foto:           document.getElementById("fFoto").value.trim()        || null,
+      tags:           document.getElementById("fTags").value.trim()        || null,
+      bijgewerkt:     Date.now(),
+    };
+
+    const editId = document.getElementById("editId").value;
+    if (editId) {
+      await update(ref(db, `recepten/${editId}`), data);
+      toast("Recept bijgewerkt");
+    } else {
+      data.aangemaakt = Date.now();
+      await push(dbRef, data);
+      toast("Recept opgeslagen");
+    }
+    closeForm();
+  };
+
+  // --- HELPERS ---
+  function catNaam(cat) {
+    return { ontbijt:"Ontbijt", lunch:"Lunch", diner:"Diner", dessert:"Dessert",
+             snack:"Snack", drank:"Drank", andere:"Andere" }[cat] || "Andere";
+  }
+  function catEmoji(cat) {
+    return { ontbijt:"🥞", lunch:"🥗", diner:"🍽️", dessert:"🍰",
+             snack:"🥨", drank:"🥤", andere:"📌" }[cat] || "🍽️";
+  }
+  function escHTML(s) {
+    return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  function toast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 2500);
+  }
+</script>
+</body>
+</html>
