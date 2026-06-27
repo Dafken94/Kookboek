@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mijn Kookboek</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Lato',sans-serif;background:#1a0e08;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+:root{
+  --paper:#F5F0E8;--paper-dark:#E8E0D0;--paper-mid:#EDE5D5;
+  --ink:#2C1810;--ink-light:#6B4A32;--ink-muted:#9C7B60;
+  --accent:#8B4513;--accent-h:#6B340F;
+  --gold:#C9A84C;--gold-light:#F0D080;
+  --green:#4A7C59;--orange:#D35400;--red:#C0392B;
+  --blue:#4A90D9;--yellow:#F1C40F;
+  --spine:#3D2B1F;
+}
+
+/* ── BOOK WRAPPER ── */
+.book-scene{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px}
+.book{
+  position:relative;display:flex;
+  width:min(92vw,1080px);height:min(86vh,740px);
+  box-shadow:0 24px 80px rgba(0,0,0,.7),0 0 0 1px rgba(0,0,0,.4);
+  border-radius:3px 14px 14px 3px;
+}
+
+/* ── PAGES ── */
+.page-left,.page-right{flex:1;height:100%;background:var(--paper);overflow:hidden;position:relative}
+.page-left{background:var(--paper-dark);border-right:1px solid rgba(0,0,0,.07)}
+.page-left::after,.page-right::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 50%,transparent 60%,rgba(44,24,16,.04) 100%);
+}
+
+/* ── SPINE ── */
+.book-spine{
+  width:42px;min-width:42px;height:100%;
+  background:linear-gradient(to right,#1e0f08 0%,#3D2B1F 18%,#6B4532 40%,#8B6040 50%,#6B4532 60%,#3D2B1F 82%,#1e0f08 100%);
+  position:relative;z-index:10;
+  box-shadow:inset -5px 0 14px rgba(0,0,0,.5),inset 5px 0 14px rgba(0,0,0,.5);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.spine-text{
+  writing-mode:vertical-rl;transform:rotate(180deg);
+  color:var(--gold);font-family:'Playfair Display',serif;
+  font-size:12px;letter-spacing:3px;text-transform:uppercase;opacity:.7;user-select:none;
+}
+
+/* ── NAV ARROWS ── */
+.nav-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:46px;height:46px;border-radius:50%;
+  border:2px solid var(--gold);background:rgba(30,15,8,.8);color:var(--gold);
+  font-size:18px;cursor:pointer;z-index:20;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;user-select:none;
+}
+.nav-arrow:hover{background:var(--accent);border-color:var(--gold-light);color:#fff}
+.nav-arrow:disabled{opacity:.25;cursor:default;pointer-events:none}
+.nav-arrow.prev{left:-62px}
+.nav-arrow.next{right:-62px}
+
+/* ── PAGE FLIP ANIMATION ── */
+.flip-overlay{
+  position:absolute;inset:0;pointer-events:none;z-index:30;
+  perspective:2200px;overflow:hidden;
+}
+.flipper{
+  position:absolute;top:0;right:0;width:50%;height:100%;
+  transform-style:preserve-3d;transform-origin:left center;
+  backface-visibility:hidden;
+}
+.flipper.go-forward{animation:flipFwd .65s cubic-bezier(.4,0,.2,1) forwards}
+.flipper.go-back   {animation:flipBck .65s cubic-bezier(.4,0,.2,1) forwards}
+.flip-front,.flip-back{
+  position:absolute;inset:0;backface-visibility:hidden;overflow:hidden;
+}
+.flip-back{transform:rotateY(180deg)}
+@keyframes flipFwd{from{transform:rotateY(0)}   to{transform:rotateY(-180deg)}}
+@keyframes flipBck{from{transform:rotateY(-180deg)} to{transform:rotateY(0)}}
+
+/* page corner hint */
+.corner-hint{
+  position:absolute;bottom:0;right:0;width:0;height:0;
+  border-style:solid;border-color:transparent transparent var(--paper-dark) transparent;
+  border-width:0;transition:border-width .25s;cursor:pointer;z-index:5;
+}
+.page-right:hover .corner-hint{border-width:0 0 36px 36px;border-color:transparent transparent rgba(201,168,76,.35) transparent}
+
+/* ── COVER ── */
+.cover-page{
+  width:100%;height:100%;
+  background:linear-gradient(150deg,#3a6b4a 0%,#2a4f37 55%,#1e3828 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px;position:relative;overflow:hidden;
+}
+.cover-page::before{content:'';position:absolute;inset:14px;border:2px solid rgba(201,168,76,.35);pointer-events:none}
+.cover-page::after {content:'';position:absolute;inset:19px;border:1px solid rgba(201,168,76,.18);pointer-events:none}
+.cover-icon{font-size:52px;margin-bottom:18px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4))}
+.cover-title{
+  font-family:'Playfair Display',serif;font-size:clamp(26px,3.5vw,46px);
+  color:var(--gold);text-align:center;line-height:1.2;margin-bottom:6px;
+  text-shadow:2px 3px 10px rgba(0,0,0,.5);
+}
+.cover-sub{font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(13px,1.6vw,17px);color:rgba(201,168,76,.65);margin-bottom:28px}
+.cover-rule{width:70px;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent);margin:12px auto}
+.cover-owner{
+  font-family:'Playfair Display',serif;font-style:italic;font-size:15px;
+  color:rgba(255,255,255,.65);cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.25);padding-bottom:2px;transition:all .2s;
+}
+.cover-owner:hover{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* ── TOC ── */
+.toc-page{width:100%;height:100%;padding:28px 24px;overflow:hidden;display:flex;flex-direction:column}
+.toc-heading{
+  font-family:'Playfair Display',serif;font-size:20px;color:var(--ink);
+  border-bottom:2px solid var(--gold);padding-bottom:8px;margin-bottom:14px;
+}
+.toc-search{
+  width:100%;padding:7px 12px;border:1px solid var(--paper-dark);border-radius:4px;
+  background:var(--paper-mid);font-family:'Lato',sans-serif;font-size:13px;color:var(--ink);
+  margin-bottom:12px;outline:none;transition:border-color .2s;
+}
+.toc-search:focus{border-color:var(--accent)}
+.toc-list{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--paper-dark) transparent}
+.toc-entry{
+  display:flex;align-items:baseline;gap:5px;padding:7px 0;
+  border-bottom:1px solid var(--paper-dark);cursor:pointer;transition:color .15s;
+}
+.toc-entry:hover .toc-e-name{color:var(--accent)}
+.toc-e-num{font-size:11px;color:var(--accent);font-weight:700;min-width:22px}
+.toc-e-name{font-family:'Playfair Display',serif;font-size:13px;color:var(--ink);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toc-e-dots{flex:1;border-bottom:1px dotted var(--ink-muted);margin:0 5px;min-width:10px;align-self:center}
+.toc-e-pg{font-size:11px;color:var(--ink-muted);min-width:22px;text-align:right}
+.toc-empty{text-align:center;color:var(--ink-muted);font-style:italic;font-size:13px;padding:20px 0}
+
+/* ── RECIPE PAGE ── */
+.recipe-page{width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
+.recipe-header{
+  padding:11px 18px 9px;border-bottom:double 3px var(--gold);flex-shrink:0;
+  background:linear-gradient(180deg,var(--paper) 0%,var(--paper-mid) 100%);
+  display:flex;align-items:center;gap:10px;
+}
+.recipe-title-inp{
+  font-family:'Playfair Display',serif;font-size:17px;color:var(--ink);
+  border:none;background:transparent;outline:none;flex:1;
+  border-bottom:1px dashed transparent;transition:border-color .2s;
+}
+.recipe-title-inp:hover,.recipe-title-inp:focus{border-bottom-color:var(--accent)}
+.pg-num{font-size:11px;color:var(--ink-muted);white-space:nowrap}
+
+.recipe-cols{flex:1;display:grid;grid-template-columns:1fr 1.15fr 0.85fr;overflow:hidden;min-height:0}
+.col{height:100%;overflow-y:auto;padding:12px 13px;border-right:1px solid var(--paper-dark);scrollbar-width:thin;scrollbar-color:var(--paper-dark) transparent}
+.col:last-child{border-right:none}
+.col-h{
+  font-family:'Playfair Display',serif;font-size:12px;color:var(--accent);
+  text-transform:uppercase;letter-spacing:.08em;
+  margin-bottom:11px;padding-bottom:5px;border-bottom:1px solid var(--gold);
+}
+
+/* ── COLUMN 1 ── */
+.prep-row{
+  display:flex;align-items:center;gap:8px;
+  background:var(--paper-mid);border:1px solid var(--paper-dark);
+  border-radius:6px;padding:7px 11px;margin-bottom:13px;
+}
+.prep-inp{
+  width:56px;border:none;background:transparent;
+  font-size:19px;font-weight:700;color:var(--accent);
+  font-family:'Playfair Display',serif;outline:none;text-align:center;
+}
+.prep-lbl{font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em}
+.sub-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);margin:12px 0 6px}
+.row-add{display:flex;gap:5px;margin-bottom:7px}
+.row-add input{flex:1;min-width:0;padding:5px 7px;border:1px solid var(--paper-dark);border-radius:4px;background:var(--paper-mid);font-size:12px;color:var(--ink);outline:none}
+.row-add input:focus{border-color:var(--accent)}
+.btn-xs{padding:5px 9px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:4px;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-xs:hover{background:var(--accent);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px}
+.chip{display:flex;align-items:center;gap:3px;padding:2px 7px;background:var(--paper-mid);border:1px solid var(--paper-dark);border-radius:11px;font-size:12px;color:var(--ink)}
+.chip-x{background:none;border:none;cursor:pointer;color:var(--ink-muted);font-size:10px;padding:0;line-height:1;transition:color .15s}
+.chip-x:hover{color:var(--red)}
+.ing-form{display:grid;grid-template-columns:1fr 44px 56px auto;gap:3px;margin-bottom:7px}
+.ing-form input,.ing-form select{padding:5px 5px;border:1px solid var(--paper-dark);border-radius:4px;background:var(--paper-mid);font-size:11px;color:var(--ink);outline:none;width:100%}
+.ing-form input:focus,.ing-form select:focus{border-color:var(--accent)}
+.ing-list{list-style:none}
+.ing-row{display:flex;align-items:center;gap:5px;padding:4px 0;border-bottom:1px solid var(--paper-dark);font-size:12px}
+.ing-em{font-size:13px}
+.ing-name{flex:1;color:var(--ink)}
+.ing-amt{color:var(--accent);font-weight:700;font-size:11px;white-space:nowrap}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--paper-dark);font-size:10px;padding:0;transition:color .15s}
+.del-btn:hover{color:var(--red)}
+
+/* ── COLUMN 2 ── */
+.steps-ul{list-style:none;margin-bottom:9px}
+.step-li{
+  display:flex;gap:7px;padding:7px 5px;border-bottom:1px solid var(--paper-dark);
+  align-items:flex-start;cursor:grab;transition:background .15s;
+}
+.step-li:hover{background:var(--paper-mid);border-radius:4px}
+.step-li.done{opacity:.55}
+.step-li.done .step-ta{text-decoration:line-through;color:var(--ink-muted)}
+.step-li.drag-over{border-top:2px solid var(--accent)}
+.step-n{
+  width:20px;height:20px;min-width:20px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;margin-top:3px;
+}
+.step-body{flex:1;min-width:0}
+.step-ta{
+  width:100%;border:none;background:transparent;
+  font-family:'Lato',sans-serif;font-size:12px;color:var(--ink);
+  resize:none;outline:none;line-height:1.5;min-height:32px;
+}
+.step-t-row{display:flex;align-items:center;gap:3px;margin-top:2px}
+.step-t-inp{width:36px;border:none;border-bottom:1px dashed var(--paper-dark);background:transparent;font-size:10px;color:var(--accent);outline:none;text-align:center}
+.step-t-lbl{font-size:10px;color:var(--ink-muted)}
+.step-acts{display:flex;flex-direction:column;gap:2px}
+.step-btn{width:19px;height:19px;border:none;border-radius:3px;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.s-done{background:var(--paper-dark);color:var(--green)}
+.s-done:hover,.step-li.done .s-done{background:var(--green);color:#fff}
+.s-del{background:var(--paper-dark);color:var(--ink-muted)}
+.s-del:hover{background:var(--red);color:#fff}
+.btn-add-step{
+  width:100%;padding:7px;border:1.5px dashed var(--paper-dark);
+  border-radius:5px;background:transparent;color:var(--ink-muted);
+  font-size:12px;cursor:pointer;transition:all .2s;
+}
+.btn-add-step:hover{border-color:var(--accent);color:var(--accent);background:var(--paper-mid)}
+
+/* ── COLUMN 3 ── */
+.port-row{display:flex;align-items:center;gap:7px;margin-bottom:10px;font-size:12px;color:var(--ink-muted)}
+.port-inp{width:42px;text-align:center;padding:3px;border:1px solid var(--paper-dark);border-radius:4px;background:var(--paper-mid);font-size:13px;font-weight:700;color:var(--accent);outline:none}
+.mode-row{display:flex;gap:5px;margin-bottom:10px}
+.mode-btn{padding:3px 9px;border-radius:10px;border:1px solid var(--paper-dark);background:transparent;color:var(--ink-muted);cursor:pointer;font-size:11px;transition:all .15s}
+.mode-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.donut-wrap{position:relative;width:110px;height:110px;margin:0 auto 10px}
+.donut-lbl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.donut-kcal{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--ink);line-height:1}
+.donut-sub{font-size:9px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em}
+.nutr-rows{margin-top:4px}
+.nutr-r{margin-bottom:7px}
+.nutr-r-top{display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px}
+.nutr-r-lbl{color:var(--ink-muted);display:flex;align-items:center;gap:3px}
+.nutr-dot{display:inline-block;width:7px;height:7px;border-radius:50%}
+.nutr-val{font-weight:700}
+.nutr-track{background:var(--paper-dark);border-radius:3px;height:4px}
+.nutr-fill{height:100%;border-radius:3px;transition:width .5s ease}
+
+/* ── PAGE NUMBER ── */
+.pg-footer{position:absolute;bottom:7px;font-family:'Playfair Display',serif;font-size:10px;color:var(--ink-muted);opacity:.45;pointer-events:none;z-index:2}
+.pg-footer.l{left:18px}
+.pg-footer.r{right:18px}
+
+/* ── FLOATING TOOLBAR ── */
+.toolbar{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:7px;z-index:50}
+.tb-btn{
+  width:46px;height:46px;border-radius:50%;
+  border:2px solid var(--gold);background:rgba(30,15,8,.85);color:var(--gold);
+  font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(0,0,0,.5);transition:all .2s;position:relative;
+}
+.tb-btn:hover{background:var(--accent);border-color:var(--gold-light);transform:scale(1.08)}
+.tb-btn[data-tip]::after{
+  content:attr(data-tip);position:absolute;right:52px;
+  background:rgba(30,15,8,.95);color:var(--gold);padding:4px 9px;border-radius:4px;
+  font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;
+  font-family:'Lato',sans-serif;border:1px solid rgba(201,168,76,.3);
+}
+.tb-btn:hover[data-tip]::after{opacity:1}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);
+  background:var(--ink);color:var(--gold);padding:9px 18px;border-radius:6px;
+  font-size:13px;z-index:100;transition:transform .3s;
+  border:1px solid rgba(201,168,76,.4);pointer-events:none;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── DIALOG ── */
+.dlg-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center}
+.dlg-ov.open{display:flex}
+.dlg{background:var(--paper);border-radius:8px;padding:26px;max-width:320px;box-shadow:0 20px 60px rgba(0,0,0,.6);border:1px solid var(--gold)}
+.dlg h3{font-family:'Playfair Display',serif;margin-bottom:8px;color:var(--ink);font-size:16px}
+.dlg p{font-size:13px;color:var(--ink-muted);margin-bottom:18px;line-height:1.5}
+.dlg-btns{display:flex;gap:8px;justify-content:flex-end}
+.dlg-btn{padding:7px 16px;border-radius:5px;font-size:13px;cursor:pointer;font-weight:600;transition:all .15s;border:1px solid}
+.dlg-cancel{background:var(--paper-mid);border-color:var(--paper-dark);color:var(--ink-muted)}
+.dlg-cancel:hover{background:var(--paper-dark)}
+.dlg-ok{background:var(--red);border-color:var(--red);color:#fff}
+.dlg-ok:hover{background:#a93226}
+
+/* ── RESPONSIVE ── */
+@media(max-width:767px){
+  body{padding:0;background:var(--paper-dark)}
+  .book{width:100vw;height:100dvh;border-radius:0;flex-direction:column}
+  .book-spine{display:none}
+  .page-left{display:none}
+  .page-right{width:100%;flex:1}
+  .nav-arrow{top:auto;bottom:14px;transform:none}
+  .nav-arrow.prev{left:14px}
+  .nav-arrow.next{right:14px}
+  .recipe-cols{grid-template-columns:1fr}
+  .col{border-right:none;border-bottom:1px solid var(--paper-dark);max-height:none;overflow-y:visible}
+  .recipe-page{overflow-y:auto}
+  .toolbar{bottom:74px}
+}
+@media(max-width:960px) and (min-width:768px){
+  .recipe-cols{grid-template-columns:1fr 1fr 0.7fr}
+}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--paper-dark);border-radius:2px}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
+</style>
+</head>
+<body>
+
+<div class="book-scene">
+  <div class="book" id="book">
+    <button class="nav-arrow prev" id="prevBtn" disabled>◀</button>
+    <div class="page-left"  id="pageLeft"></div>
+    <div class="book-spine"><div class="spine-text" id="spineText">Mijn Kookboek</div></div>
+    <div class="page-right" id="pageRight"></div>
+    <button class="nav-arrow next" id="nextBtn">▶</button>
+    <div class="flip-overlay" id="flipOverlay"></div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="tb-btn" id="btnNew"    data-tip="Nieuw recept">📖</button>
+  <button class="tb-btn" id="btnDel"    data-tip="Verwijder recept" style="display:none">🗑️</button>
+  <button class="tb-btn" id="btnExp"    data-tip="Exporteer JSON">💾</button>
+  <button class="tb-btn" id="btnImp"    data-tip="Importeer JSON">📂</button>
+  <input type="file" id="fileIn" accept=".json" hidden>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="dlg-ov" id="dlgOv">
+  <div class="dlg">
+    <h3 id="dlgTitle"></h3><p id="dlgMsg"></p>
+    <div class="dlg-btns">
+      <button class="dlg-btn dlg-cancel" id="dlgNo">Annuleren</button>
+      <button class="dlg-btn dlg-ok"     id="dlgYes">Verwijderen</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+import { getDatabase, ref, set, remove, onValue }
+  from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyDbstFROsViJj4CwWinPCiQMvu5ezn4W7k",
+  authDomain:"kookboek-55db9.firebaseapp.com",
+  databaseURL:"https://kookboek-55db9-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"kookboek-55db9",
+  storageBucket:"kookboek-55db9.firebasestorage.app",
+  messagingSenderId:"453300208065",
+  appId:"1:453300208065:web:12ad3b9b924d97dcef2f40"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db    = getDatabase(fbApp);
+const dbRef = ref(db, "recepten");
+
+// ── EMOJI MAPS ────────────────────────────────────────────────
+const ING_EMOJI = {
+  'ei':'🥚','eieren':'🥚','boter':'🧈','melk':'🥛','room':'🥛','yoghurt':'🥛',
+  'bloem':'🌾','meel':'🌾','suiker':'🍬','poedersuiker':'🍬','zout':'🧂',
+  'olie':'🫙','olijfolie':'🫙','ui':'🧅','ajuin':'🧅','sjalot':'🧅',
+  'knoflook':'🧄','look':'🧄','tomaat':'🍅','tomaten':'🍅','tomatensaus':'🍅',
+  'wortel':'🥕','aardappel':'🥔','aardappelen':'🥔','kaas':'🧀',
+  'mozzarella':'🧀','parmezaan':'🧀','cheddar':'🧀',
+  'vlees':'🥩','rundvlees':'🥩','gehakt':'🥩','kip':'🍗','kipfilet':'🍗',
+  'vis':'🐟','zalm':'🐟','tonijn':'🐟','garnalen':'🍤',
+  'pasta':'🍝','spaghetti':'🍝','penne':'🍝','macaroni':'🍝',
+  'rijst':'🍚','brood':'🍞','champignons':'🍄','spinazie':'🥬',
+  'paprika':'🫑','courgette':'🥒','komkommer':'🥒',
+  'chocolade':'🍫','cacao':'🍫','honing':'🍯',
+  'noten':'🥜','amandelen':'🥜','walnoten':'🥜',
+  'citroen':'🍋','limoen':'🍋','appel':'🍎','peer':'🍐',
+  'water':'💧','wijn':'🍷','bier':'🍺',
+  'bacon':'🥓','ham':'🥓','hesp':'🥓',
+  'peper':'🌶️','cayennepeper':'🌶️','zure room':'🥛',
+  'broccoli':'🥦','bloemkool':'🥦','avocado':'🥑','maïs':'🌽',
+  'maizena':'🌽','vanille':'🌿','kaneel':'🌿','oregano':'🌿','basilicum':'🌿',
+  'mosterd':'🟡','sojasaus':'🫙',
+};
+const EQ_EMOJI = {
+  'oven':'🔥','bakoven':'🔥','mixer':'🌀','koekenpan':'🍳','pan':'🍳',
+  'pot':'🫕','kookpot':'🫕','mes':'🔪','rasp':'🧀','blender':'🥤',
+  'staafmixer':'🥤','magnetron':'📦','grill':'🥩','weegschaal':'⚖️',
+  'deegroller':'🌾','wok':'🥘','friteuse':'🍟','snijplank':'🪵',
+  'zeef':'🫙','garde':'🥄','spatel':'🥄','lepel':'🥄',
+};
+function ingEmoji(n){
+  const l=n.toLowerCase().trim();
+  for(const[k,v] of Object.entries(ING_EMOJI)) if(l.includes(k)||k.includes(l)) return v;
+  return '🥄';
+}
+function eqEmoji(n){
+  const l=n.toLowerCase().trim();
+  for(const[k,v] of Object.entries(EQ_EMOJI)) if(l.includes(k)||k.includes(l)) return v;
+  return '🍽️';
+}
+
+// ── NUTRITION DB (per 100g) ───────────────────────────────────
+const NDB = {
+  'ei':        {kcal:155,carbs:1.1, pro:13,  fat:11,  sug:1.1,fib:0  },
+  'eieren':    {kcal:155,carbs:1.1, pro:13,  fat:11,  sug:1.1,fib:0  },
+  'melk':      {kcal:61, carbs:4.7, pro:3.2, fat:3.3, sug:4.7,fib:0  },
+  'room':      {kcal:195,carbs:3.5, pro:2.1, fat:19,  sug:3.5,fib:0  },
+  'bloem':     {kcal:364,carbs:76,  pro:10,  fat:1,   sug:0.3,fib:2.7},
+  'boter':     {kcal:717,carbs:0.1, pro:0.9, fat:81,  sug:0.1,fib:0  },
+  'suiker':    {kcal:387,carbs:100, pro:0,   fat:0,   sug:100,fib:0  },
+  'olie':      {kcal:884,carbs:0,   pro:0,   fat:100, sug:0,  fib:0  },
+  'olijfolie': {kcal:884,carbs:0,   pro:0,   fat:100, sug:0,  fib:0  },
+  'tomaat':    {kcal:18, carbs:3.9, pro:0.9, fat:0.2, sug:2.6,fib:1.2},
+  'wortel':    {kcal:41, carbs:10,  pro:0.9, fat:0.2, sug:4.7,fib:2.8},
+  'aardappel': {kcal:77, carbs:17,  pro:2,   fat:0.1, sug:0.8,fib:2.2},
+  'kaas':      {kcal:402,carbs:1.3, pro:25,  fat:33,  sug:0.5,fib:0  },
+  'mozzarella':{kcal:280,carbs:2.2, pro:28,  fat:17,  sug:1,  fib:0  },
+  'kip':       {kcal:165,carbs:0,   pro:31,  fat:3.6, sug:0,  fib:0  },
+  'rundvlees': {kcal:250,carbs:0,   pro:26,  fat:17,  sug:0,  fib:0  },
+  'gehakt':    {kcal:254,carbs:0,   pro:17,  fat:20,  sug:0,  fib:0  },
+  'zalm':      {kcal:208,carbs:0,   pro:20,  fat:13,  sug:0,  fib:0  },
+  'tonijn':    {kcal:116,carbs:0,   pro:26,  fat:1,   sug:0,  fib:0  },
+  'pasta':     {kcal:131,carbs:25,  pro:5,   fat:1.1, sug:0.6,fib:1.8},
+  'spaghetti': {kcal:131,carbs:25,  pro:5,   fat:1.1, sug:0.6,fib:1.8},
+  'rijst':     {kcal:130,carbs:28,  pro:2.7, fat:0.3, sug:0,  fib:0.4},
+  'brood':     {kcal:265,carbs:49,  pro:9,   fat:3.2, sug:5,  fib:2.7},
+  'champignons':{kcal:22,carbs:3.3, pro:3.1, fat:0.3, sug:1.7,fib:1  },
+  'spinazie':  {kcal:23, carbs:3.6, pro:2.9, fat:0.4, sug:0.4,fib:2.2},
+  'paprika':   {kcal:31, carbs:6,   pro:1,   fat:0.3, sug:4.2,fib:2.1},
+  'ui':        {kcal:40, carbs:9.3, pro:1.1, fat:0.1, sug:4.2,fib:1.7},
+  'knoflook':  {kcal:149,carbs:33,  pro:6.4, fat:0.5, sug:1,  fib:2.1},
+  'chocolade': {kcal:546,carbs:60,  pro:5,   fat:31,  sug:48, fib:7  },
+  'honing':    {kcal:304,carbs:82,  pro:0.3, fat:0,   sug:82, fib:0.2},
+  'bacon':     {kcal:541,carbs:1.4, pro:37,  fat:42,  sug:0,  fib:0  },
+  'avocado':   {kcal:160,carbs:9,   pro:2,   fat:15,  sug:0.7,fib:7  },
+  'broccoli':  {kcal:34, carbs:7,   pro:2.8, fat:0.4, sug:1.7,fib:2.6},
+  'appel':     {kcal:52, carbs:14,  pro:0.3, fat:0.2, sug:10, fib:2.4},
+  'yoghurt':   {kcal:59, carbs:3.6, pro:10,  fat:0.4, sug:3.6,fib:0  },
+  'maizena':   {kcal:381,carbs:91,  pro:0.3, fat:0.1, sug:0,  fib:0.9},
+  'noten':     {kcal:654,carbs:14,  pro:15,  fat:65,  sug:2.6,fib:6.7},
+};
+const ADH={kcal:2000,carbs:275,pro:50,fat:78,sug:50,fib:28};
+
+function toGrams(amt,unit){
+  const a=parseFloat(amt)||0;
+  const u={'g':1,'ml':1,'el':15,'tl':5,'stuks':80,'snufje':1}[unit]||1;
+  return a*u;
+}
+function calcNutr(ings){
+  const t={kcal:0,carbs:0,pro:0,fat:0,sug:0,fib:0};
+  for(const i of ings){
+    const l=i.name.toLowerCase().trim();
+    let d=null;
+    for(const[k,v] of Object.entries(NDB)) if(l.includes(k)||k.includes(l)){d=v;break}
+    if(!d) continue;
+    const g=toGrams(i.amount,i.unit)/100;
+    t.kcal+=d.kcal*g; t.carbs+=d.carbs*g; t.pro+=d.pro*g;
+    t.fat+=d.fat*g;   t.sug+=d.sug*g;     t.fib+=d.fib*g;
+  }
+  return t;
+}
+
+// ── DATA ─────────────────────────────────────────────────────
+let recipes=[], spreadIdx=0, busy=false;
+let ownerName=localStorage.getItem('kb_owner')||'Mijn naam';
+let _dlgCb=null;
+
+function uid(){return crypto.randomUUID()}
+function newRecipe(title='Nieuw recept'){
+  return{id:uid(),title,prepTime:30,equipment:[],ingredients:[],steps:[],portions:4,ts:Date.now()}
+}
+function sampleRecipe(){
+  return{
+    id:uid(),title:'Spaghetti carbonara',prepTime:25,
+    equipment:['koekenpan','pot'],
+    ingredients:[
+      {id:1,name:'spaghetti',  amount:400,unit:'g',    emoji:'🍝'},
+      {id:2,name:'ei',         amount:4,  unit:'stuks',emoji:'🥚'},
+      {id:3,name:'bacon',      amount:200,unit:'g',    emoji:'🥓'},
+      {id:4,name:'parmezaan',  amount:80, unit:'g',    emoji:'🧀'},
+      {id:5,name:'knoflook',   amount:2,  unit:'stuks',emoji:'🧄'},
+      {id:6,name:'peper',      amount:1,  unit:'snufje',emoji:'🌶️'},
+    ],
+    steps:[
+      {id:1,text:'Breng een grote pot gezouten water aan de kook.',time:10,done:false},
+      {id:2,text:'Bak de bacon knapperig in een koekenpan op middelhoog vuur. Voeg knoflook toe.',time:8,done:false},
+      {id:3,text:'Klop de eieren los met de geraspte parmezaan en ruim gemalen peper.',time:2,done:false},
+      {id:4,text:'Kook de spaghetti al dente. Bewaar 1 kopje kookwater.',time:10,done:false},
+      {id:5,text:'Haal de pan van het vuur. Meng pasta met bacon, voeg eiermengsel toe en roer snel. Voeg kookwater toe tot romige saus.',time:3,done:false},
+    ],
+    portions:4,ts:Date.now()
+  }
+}
+function getR(id){return recipes.find(r=>r.id===id)}
+function totalSpreads(){return 2+recipes.length}
+
+// ── FIREBASE SYNC ─────────────────────────────────────────────
+let saveTimer=null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    const data={};
+    recipes.forEach((r,i)=>data[r.id]={...r,_ord:i});
+    set(dbRef,data).catch(()=>{});
+    localStorage.setItem('kb_data',JSON.stringify(recipes));
+  },500);
+}
+
+// Boot: local first, then firebase once
+(()=>{
+  try{ const s=localStorage.getItem('kb_data'); if(s) recipes=JSON.parse(s); }catch{}
+  if(!recipes.length){ recipes=[sampleRecipe()]; localStorage.setItem('kb_data',JSON.stringify(recipes)); }
+  render();
+  onValue(dbRef,snap=>{
+    const val=snap.val();
+    if(val){
+      recipes=Object.values(val).sort((a,b)=>(a._ord??0)-(b._ord??0));
+      recipes.forEach(r=>{delete r._ord});
+      localStorage.setItem('kb_data',JSON.stringify(recipes));
+      render();
+    }
+  },{onlyOnce:true});
+})();
+
+// ── NAVIGATION ────────────────────────────────────────────────
+function flip(dir,target){
+  if(busy) return;
+  if(target===undefined) target=spreadIdx+dir;
+  if(target<0||target>=totalSpreads()) return;
+  busy=true;
+
+  const right=document.getElementById('pageRight');
+  const left =document.getElementById('pageLeft');
+  const ov   =document.getElementById('flipOverlay');
+
+  // Snapshot current right page for flip animation
+  const snapHTML=right.innerHTML;
+
+  // Determine next spread content
+  spreadIdx=target;
+  render(); // update underlying pages
+
+  // Build flipper
+  ov.innerHTML=`<div class="flipper ${dir>0?'go-forward':'go-back'}" id="flipper">
+    <div class="flip-front">${snapHTML}</div>
+    <div class="flip-back" style="background:var(--paper-dark)"></div>
+  </div>`;
+
+  const fl=document.getElementById('flipper');
+  fl.addEventListener('animationend',()=>{
+    ov.innerHTML='';
+    busy=false;
+  },{once:true});
+}
+
+function goTo(s){if(s!==spreadIdx) flip(s>spreadIdx?1:-1,s)}
+
+// ── RENDER ────────────────────────────────────────────────────
+function render(){
+  const pL=document.getElementById('pageLeft');
+  const pR=document.getElementById('pageRight');
+  document.getElementById('prevBtn').disabled=(spreadIdx<=0);
+  document.getElementById('nextBtn').disabled=(spreadIdx>=totalSpreads()-1);
+  document.getElementById('btnDel').style.display=spreadIdx>=2?'flex':'none';
+
+  if(spreadIdx===0){
+    pL.innerHTML=`<div style="width:100%;height:100%;background:var(--paper-dark);display:flex;align-items:center;justify-content:center;opacity:.3;font-size:40px">📖</div>`;
+    pR.innerHTML=coverHTML();
+    bindCover();
+  } else if(spreadIdx===1){
+    pL.innerHTML=tocHTML();
+    pR.innerHTML=firstRecipeOrEmpty();
+    bindToc();
+    if(recipes[0]) bindPage(recipes[0]);
+  } else {
+    const ri=spreadIdx-2;
+    const r=recipes[ri];
+    if(!r){pL.innerHTML='';pR.innerHTML='';return;}
+    pL.innerHTML=`<div class="pg-footer l">${spreadIdx*2}</div>`;
+    pR.innerHTML=recipeHTML(r,spreadIdx*2+1);
+    bindPage(r);
+  }
+}
+
+// ── COVER ─────────────────────────────────────────────────────
+function coverHTML(){
+  return`<div class="cover-page">
+    <div class="cover-icon">🍳</div>
+    <div class="cover-title">Mijn Kookboek</div>
+    <div class="cover-sub">Favoriete recepten &amp; geheimen</div>
+    <div class="cover-rule"></div>
+    <div class="cover-owner" id="coverOwner">${x(ownerName)}</div>
+    <div class="corner-hint"></div>
+  </div>`;
+}
+function bindCover(){
+  document.getElementById('coverOwner')?.addEventListener('click',()=>{
+    const n=prompt('Naam eigenaar:',ownerName);
+    if(n!==null){ownerName=n.trim()||ownerName;localStorage.setItem('kb_owner',ownerName);
+      document.getElementById('coverOwner').textContent=ownerName;
+      document.getElementById('spineText').textContent=ownerName+"'s Kookboek";
+    }
+  });
+}
+
+// ── TOC ───────────────────────────────────────────────────────
+function tocHTML(){
+  const items=recipes.map((r,i)=>`
+    <div class="toc-entry" data-s="${2+i}">
+      <span class="toc-e-num">${i+1}</span>
+      <span class="toc-e-name">${x(r.title)}</span>
+      <span class="toc-e-dots"></span>
+      <span class="toc-e-pg">${(2+i)*2+1}</span>
+    </div>`).join('');
+  return`<div class="toc-page">
+    <div class="toc-heading">📚 Inhoudsopgave</div>
+    <input class="toc-search" id="tocSearch" placeholder="🔍 Zoek recept…">
+    <div class="toc-list" id="tocList">${items||'<div class="toc-empty">Nog geen recepten.</div>'}</div>
+    <div class="pg-footer l">2</div>
+  </div>`;
+}
+function bindToc(){
+  document.getElementById('tocSearch')?.addEventListener('input',e=>{
+    const q=e.target.value.toLowerCase();
+    document.querySelectorAll('.toc-entry').forEach(el=>{
+      el.style.display=el.querySelector('.toc-e-name').textContent.toLowerCase().includes(q)?'':'none';
+    });
+  });
+  document.querySelectorAll('.toc-entry[data-s]').forEach(el=>{
+    el.addEventListener('click',()=>goTo(parseInt(el.dataset.s)));
+  });
+}
+function firstRecipeOrEmpty(){
+  if(!recipes[0]) return`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:40px;text-align:center;font-family:'Playfair Display',serif;font-style:italic;color:var(--ink-muted);font-size:14px">Klik op 📖 om je eerste recept toe te voegen.</div>`;
+  return recipeHTML(recipes[0],3);
+}
+
+// ── RECIPE PAGE ───────────────────────────────────────────────
+function recipeHTML(r,pgn){
+  return`<div class="recipe-page" data-rid="${r.id}">
+    <div class="recipe-header">
+      <input class="recipe-title-inp" value="${x(r.title)}" placeholder="Naam…" data-rid="${r.id}">
+      <span class="pg-num">p. ${pgn}</span>
+    </div>
+    <div class="recipe-cols">
+      ${col1HTML(r)}
+      ${col2HTML(r)}
+      ${col3HTML(r)}
+    </div>
+    <div class="corner-hint"></div>
+  </div>`;
+}
+
+function col1HTML(r){
+  const chips=(r.equipment||[]).map(e=>`
+    <div class="chip">${eqEmoji(e)} ${x(e)}
+      <button class="chip-x" data-rid="${r.id}" data-eq="${x(e)}">✕</button>
+    </div>`).join('');
+  const ings=(r.ingredients||[]).map(i=>`
+    <li class="ing-row">
+      <span class="ing-em">${i.emoji||ingEmoji(i.name)}</span>
+      <span class="ing-name">${x(i.name)}</span>
+      <span class="ing-amt">${i.amount} ${i.unit}</span>
+      <button class="del-btn" data-rid="${r.id}" data-iid="${i.id}">✕</button>
+    </li>`).join('');
+  return`<div class="col" id="c1-${r.id}">
+    <div class="col-h">⏱️ Receptinfo</div>
+    <div class="prep-row">
+      <span style="font-size:18px">⏱️</span>
+      <input class="prep-inp" type="number" value="${r.prepTime||''}" placeholder="30" data-rid="${r.id}">
+      <span class="prep-lbl">minuten</span>
+    </div>
+    <div class="sub-h">🍳 Apparatuur</div>
+    <div class="row-add">
+      <input id="eq-${r.id}" placeholder="bv. oven, mixer…">
+      <button class="btn-xs eq-add" data-rid="${r.id}">+</button>
+    </div>
+    <div class="chips" id="chips-${r.id}">${chips}</div>
+    <div class="sub-h">🥕 Ingrediënten</div>
+    <div class="ing-form">
+      <input id="in-${r.id}" placeholder="Naam">
+      <input id="ia-${r.id}" type="number" placeholder="100">
+      <select id="iu-${r.id}">
+        <option>g</option><option>ml</option><option>el</option>
+        <option>tl</option><option>stuks</option><option>snufje</option>
+      </select>
+      <button class="btn-xs ing-add" data-rid="${r.id}">+</button>
+    </div>
+    <ul class="ing-list" id="il-${r.id}">${ings}</ul>
+  </div>`;
+}
+
+function col2HTML(r){
+  const steps=(r.steps||[]).map((s,i)=>`
+    <li class="step-li${s.done?' done':''}" draggable="true" data-rid="${r.id}" data-sid="${s.id}">
+      <div class="step-n">${i+1}</div>
+      <div class="step-body">
+        <textarea class="step-ta" rows="2" data-rid="${r.id}" data-sid="${s.id}">${x(s.text)}</textarea>
+        <div class="step-t-row">
+          <span style="font-size:10px;color:var(--ink-muted)">⏱</span>
+          <input class="step-t-inp" type="number" value="${s.time||''}" placeholder="—" data-rid="${r.id}" data-sid="${s.id}">
+          <span class="step-t-lbl">min</span>
+        </div>
+      </div>
+      <div class="step-acts">
+        <button class="step-btn s-done" data-rid="${r.id}" data-sid="${s.id}" title="Voltooid">✓</button>
+        <button class="step-btn s-del"  data-rid="${r.id}" data-sid="${s.id}" title="Verwijder">✕</button>
+      </div>
+    </li>`).join('');
+  return`<div class="col" id="c2-${r.id}">
+    <div class="col-h">📋 Bereiding</div>
+    <ul class="steps-ul" id="sl-${r.id}">${steps}</ul>
+    <button class="btn-add-step" data-rid="${r.id}">+ Stap toevoegen</button>
+  </div>`;
+}
+
+function col3HTML(r){
+  const n=calcNutr(r.ingredients||[]);
+  const por=r.portions||1;
+  return`<div class="col" id="c3-${r.id}">
+    <div class="col-h">🥗 Voedingswaarden</div>
+    <div class="port-row">
+      <span>Porties:</span>
+      <input class="port-inp" type="number" value="${por}" min="1" data-rid="${r.id}">
+    </div>
+    <div class="mode-row">
+      <button class="mode-btn active" data-mode="pp" data-rid="${r.id}">Per portie</button>
+      <button class="mode-btn"        data-mode="tt" data-rid="${r.id}">Totaal</button>
+    </div>
+    <div class="donut-wrap">
+      <canvas id="dc-${r.id}" width="110" height="110"></canvas>
+      <div class="donut-lbl">
+        <div class="donut-kcal" id="dkc-${r.id}">${Math.round(n.kcal/por)}</div>
+        <div class="donut-sub">kcal/portie</div>
+      </div>
+    </div>
+    <div class="nutr-rows" id="nt-${r.id}">${nutrRows(n,por,true)}</div>
+  </div>`;
+}
+
+function nutrRows(n,por,pp){
+  const d=pp?por:1;
+  return[
+    {lbl:'Koolhydraten',k:'carbs',clr:'#4A90D9',adh:ADH.carbs},
+    {lbl:'Eiwitten',    k:'pro',  clr:'#E74C3C',adh:ADH.pro  },
+    {lbl:'Vetten',      k:'fat',  clr:'#F1C40F',adh:ADH.fat  },
+    {lbl:'Suikers',     k:'sug',  clr:'#E67E22',adh:ADH.sug  },
+    {lbl:'Vezels',      k:'fib',  clr:'#2ECC71',adh:ADH.fib  },
+  ].map(row=>{
+    const v=(n[row.k]||0)/d;
+    const pct=Math.min((v/row.adh)*100,100);
+    const fc=pct<15?'#4A7C59':pct<30?'#D35400':'#C0392B';
+    const vc=pct<15?'var(--green)':pct<30?'var(--orange)':'var(--red)';
+    return`<div class="nutr-r">
+      <div class="nutr-r-top">
+        <span class="nutr-r-lbl"><span class="nutr-dot" style="background:${row.clr}"></span>${row.lbl}</span>
+        <span class="nutr-val" style="color:${vc}">${v.toFixed(1)}g</span>
+      </div>
+      <div class="nutr-track"><div class="nutr-fill" style="width:${pct.toFixed(0)}%;background:${fc}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function drawDonut(id,n,por){
+  const c=document.getElementById(`dc-${id}`);
+  if(!c) return;
+  const ctx=c.getContext('2d');
+  const cx=55,cy=55,r=46,lw=12;
+  const tot=(n.carbs+n.pro+n.fat)/por;
+  ctx.clearRect(0,0,110,110);
+  if(tot<=0){
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.strokeStyle='#E8E0D0';ctx.lineWidth=lw;ctx.stroke();return;
+  }
+  let a=-Math.PI/2;
+  for(const[val,clr] of [[n.carbs/por,'#4A90D9'],[n.pro/por,'#E74C3C'],[n.fat/por,'#F1C40F']]){
+    const sw=(val/tot)*Math.PI*2;
+    ctx.beginPath();ctx.arc(cx,cy,r,a,a+sw);
+    ctx.strokeStyle=clr;ctx.lineWidth=lw;ctx.stroke();
+    a+=sw;
+  }
+}
+
+// ── BIND PAGE ─────────────────────────────────────────────────
+function bindPage(r){
+  const rid=r.id;
+  requestAnimationFrame(()=>{
+    const nr=calcNutr(r.ingredients||[]);
+    drawDonut(rid,nr,r.portions||1);
+
+    // Title
+    document.querySelector(`.recipe-title-inp[data-rid="${rid}"]`)
+      ?.addEventListener('change',e=>{getR(rid).title=e.target.value.trim()||'Naamloos';save()});
+
+    // Prep time
+    document.querySelector(`.prep-inp[data-rid="${rid}"]`)
+      ?.addEventListener('change',e=>{getR(rid).prepTime=parseInt(e.target.value)||0;save()});
+
+    // Equipment add
+    const eqBtn=document.querySelector(`.eq-add[data-rid="${rid}"]`);
+    const eqIn =document.getElementById(`eq-${rid}`);
+    if(eqBtn&&eqIn){
+      const doEq=()=>{
+        const v=eqIn.value.trim(); if(!v) return;
+        const r2=getR(rid); if(!r2.equipment.includes(v)) r2.equipment.push(v);
+        eqIn.value=''; save(); rc1(getR(rid));
+      };
+      eqBtn.addEventListener('click',doEq);
+      eqIn.addEventListener('keydown',e=>{if(e.key==='Enter')doEq()});
+    }
+    document.querySelectorAll(`.chip-x[data-rid="${rid}"]`).forEach(b=>{
+      b.addEventListener('click',()=>{
+        const r2=getR(rid); r2.equipment=r2.equipment.filter(e=>e!==b.dataset.eq);
+        save(); rc1(r2);
+      });
+    });
+
+    // Ingredient add
+    const iBtn=document.querySelector(`.ing-add[data-rid="${rid}"]`);
+    if(iBtn){
+      const doIng=()=>{
+        const nEl=document.getElementById(`in-${rid}`),aEl=document.getElementById(`ia-${rid}`),uEl=document.getElementById(`iu-${rid}`);
+        const name=nEl.value.trim(); if(!name){nEl.focus();return;}
+        getR(rid).ingredients.push({id:Date.now(),name,amount:parseFloat(aEl.value)||0,unit:uEl.value,emoji:ingEmoji(name)});
+        nEl.value='';aEl.value='';uEl.value='g'; save(); const r2=getR(rid); rc1(r2); rc3(r2);
+      };
+      iBtn.addEventListener('click',doIng);
+      document.getElementById(`in-${rid}`)?.addEventListener('keydown',e=>{if(e.key==='Enter')doIng()});
+    }
+    document.querySelectorAll(`.del-btn[data-rid="${rid}"]`).forEach(b=>{
+      b.addEventListener('click',()=>{
+        const r2=getR(rid); r2.ingredients=r2.ingredients.filter(i=>i.id!=b.dataset.iid);
+        save(); rc1(r2); rc3(r2);
+      });
+    });
+
+    // Steps
+    bindSteps(r);
+
+    // Portions
+    document.querySelector(`.port-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
+      getR(rid).portions=parseInt(e.target.value)||1; save(); rc3(getR(rid));
+    });
+
+    // Per portie / totaal
+    document.querySelectorAll(`.mode-btn[data-rid="${rid}"]`).forEach(b=>{
+      b.addEventListener('click',()=>{
+        document.querySelectorAll(`.mode-btn[data-rid="${rid}"]`).forEach(x2=>x2.classList.remove('active'));
+        b.classList.add('active');
+        const r2=getR(rid),pp=b.dataset.mode==='pp',nr2=calcNutr(r2.ingredients||[]);
+        document.getElementById(`nt-${rid}`).innerHTML=nutrRows(nr2,r2.portions||1,pp);
+        const kEl=document.getElementById(`dkc-${rid}`);
+        if(kEl) kEl.textContent=Math.round(pp?nr2.kcal/(r2.portions||1):nr2.kcal);
+      });
+    });
+  });
+}
+
+function bindSteps(r){
+  const rid=r.id;
+
+  document.querySelector(`.btn-add-step[data-rid="${rid}"]`)?.addEventListener('click',()=>{
+    getR(rid).steps.push({id:Date.now(),text:'',time:null,done:false});
+    save(); rc2(getR(rid)); bindSteps(getR(rid));
+  });
+
+  document.querySelectorAll(`.s-done[data-rid="${rid}"]`).forEach(b=>{
+    b.addEventListener('click',()=>{
+      const r2=getR(rid),s=r2.steps.find(s=>s.id==b.dataset.sid);
+      if(s){s.done=!s.done;save();rc2(r2);bindSteps(r2);}
+    });
+  });
+
+  document.querySelectorAll(`.s-del[data-rid="${rid}"]`).forEach(b=>{
+    b.addEventListener('click',()=>{
+      const r2=getR(rid); r2.steps=r2.steps.filter(s=>s.id!=b.dataset.sid);
+      save(); rc2(r2); bindSteps(r2);
+    });
+  });
+
+  document.querySelectorAll(`.step-ta[data-rid="${rid}"]`).forEach(ta=>{
+    ta.addEventListener('input',()=>{
+      const r2=getR(rid),s=r2.steps.find(s=>s.id==ta.dataset.sid);
+      if(s){s.text=ta.value;save();}
+      ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px';
+    });
+  });
+
+  document.querySelectorAll(`.step-t-inp[data-rid="${rid}"]`).forEach(inp=>{
+    inp.addEventListener('change',()=>{
+      const r2=getR(rid),s=r2.steps.find(s=>s.id==inp.dataset.sid);
+      if(s){s.time=parseInt(inp.value)||null;save();}
+    });
+  });
+
+  // Drag & drop
+  let src=null;
+  document.querySelectorAll(`.step-li[data-rid="${rid}"]`).forEach(li=>{
+    li.addEventListener('dragstart',e=>{src=li;e.dataTransfer.effectAllowed='move';setTimeout(()=>li.style.opacity='.35',0)});
+    li.addEventListener('dragend',()=>{li.style.opacity='';});
+    li.addEventListener('dragover',e=>{e.preventDefault();li.classList.add('drag-over')});
+    li.addEventListener('dragleave',()=>li.classList.remove('drag-over'));
+    li.addEventListener('drop',e=>{
+      e.preventDefault();li.classList.remove('drag-over');
+      if(src===li) return;
+      const r2=getR(rid);
+      const si=r2.steps.findIndex(s=>s.id==src.dataset.sid);
+      const di=r2.steps.findIndex(s=>s.id==li.dataset.sid);
+      if(si<0||di<0) return;
+      const[m]=r2.steps.splice(si,1);
+      r2.steps.splice(di,0,m);
+      save(); rc2(r2); bindSteps(r2);
+    });
+  });
+}
+
+// Partial refresh
+function rc1(r){const el=document.getElementById(`c1-${r.id}`);if(el){el.outerHTML=col1HTML(r);bindPage(r);}}
+function rc2(r){const el=document.getElementById(`c2-${r.id}`);if(el){el.outerHTML=col2HTML(r);}}
+function rc3(r){
+  const el=document.getElementById(`c3-${r.id}`);
+  if(el){el.outerHTML=col3HTML(r);drawDonut(r.id,calcNutr(r.ingredients||[]),r.portions||1);bindPage(r);}
+}
+
+// ── TOOLBAR ───────────────────────────────────────────────────
+document.getElementById('prevBtn').addEventListener('click',()=>flip(-1));
+document.getElementById('nextBtn').addEventListener('click',()=>flip(1));
+
+document.getElementById('btnNew').addEventListener('click',()=>{
+  const r=newRecipe();recipes.push(r);save();goTo(2+recipes.length-1);
+});
+
+document.getElementById('btnDel').addEventListener('click',()=>{
+  const ri=spreadIdx-2; if(ri<0||ri>=recipes.length) return;
+  const r=recipes[ri];
+  dlg('Recept verwijderen',`Weet je zeker dat je "${r.title}" wilt verwijderen?`,()=>{
+    remove(ref(db,`recepten/${r.id}`));
+    recipes.splice(ri,1);
+    localStorage.setItem('kb_data',JSON.stringify(recipes));
+    spreadIdx=Math.max(0,Math.min(spreadIdx,totalSpreads()-1));
+    render(); toast('Recept verwijderd');
+  });
+});
+
+document.getElementById('btnExp').addEventListener('click',()=>{
+  const b=new Blob([JSON.stringify(recipes,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download='mijn-kookboek.json'; a.click(); toast('Kookboek geëxporteerd');
+});
+
+document.getElementById('btnImp').addEventListener('click',()=>document.getElementById('fileIn').click());
+document.getElementById('fileIn').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const fr=new FileReader();
+  fr.onload=ev=>{
+    try{
+      const imp=JSON.parse(ev.target.result);
+      if(Array.isArray(imp)){recipes=imp;save();spreadIdx=0;render();toast(`${imp.length} recept(en) geïmporteerd`);}
+    }catch{toast('Importfout — ongeldig bestand');}
+  };
+  fr.readAsText(f); e.target.value='';
+});
+
+// ── SWIPE ─────────────────────────────────────────────────────
+let tx=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50) flip(dx<0?1:-1);
+},{passive:true});
+
+// ── KEYBOARD ──────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  if(e.key==='ArrowRight') flip(1);
+  if(e.key==='ArrowLeft')  flip(-1);
+});
+
+// ── DIALOG ────────────────────────────────────────────────────
+function dlg(title,msg,cb){
+  document.getElementById('dlgTitle').textContent=title;
+  document.getElementById('dlgMsg').textContent=msg;
+  _dlgCb=cb;
+  document.getElementById('dlgOv').classList.add('open');
+}
+document.getElementById('dlgNo').addEventListener('click',()=>document.getElementById('dlgOv').classList.remove('open'));
+document.getElementById('dlgYes').addEventListener('click',()=>{
+  document.getElementById('dlgOv').classList.remove('open');
+  if(_dlgCb) _dlgCb();
+});
+
+// ── TOAST ─────────────────────────────────────────────────────
+let tt;
+function toast(msg){
+  const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show');
+  clearTimeout(tt); tt=setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// ── UTIL ──────────────────────────────────────────────────────
+function x(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+</body>
+</html>
