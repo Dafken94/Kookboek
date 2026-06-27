@@ -647,6 +647,13 @@ function leftPageHTML(r, pgn){
         <input class="recipe-title-inp" value="${x(r.title)}" placeholder="Naam van het recept…" data-rid="${r.id}">
       </div>
 
+      <div class="sec-h">👥 Aantal personen</div>
+      <div class="prep-row">
+        <span style="font-size:18px">👥</span>
+        <input class="persons-inp" type="number" value="${r.portions||4}" placeholder="4" min="1" max="99" data-rid="${r.id}">
+        <span class="prep-lbl">personen</span>
+      </div>
+
       <div class="sec-h">⏱️ Bereidingstijd</div>
       <div class="prep-row">
         <span style="font-size:18px">⏱️</span>
@@ -773,79 +780,89 @@ function drawDonut(id,n,por){
 // ── BIND PAGE ─────────────────────────────────────────────────
 function bindPage(r){
   const rid=r.id;
-  requestAnimationFrame(()=>{
-    drawDonut(rid,calcNutr(r.ingredients||[]),r.portions||1);
 
-    // Title
-    document.querySelector(`.recipe-title-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
-      getR(rid).title=e.target.value.trim()||'Naamloos';save();
-      // sync header title on right page
-      const hdr=document.querySelector('.recipe-header-title');
-      if(hdr) hdr.textContent=getR(rid).title;
+  // Draw donut (canvas, needs to happen after element is in DOM)
+  requestAnimationFrame(()=>drawDonut(rid,calcNutr(r.ingredients||[]),r.portions||1));
+
+  // Title
+  document.querySelector(`.recipe-title-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
+    getR(rid).title=e.target.value.trim()||'Naamloos';save();
+    const hdr=document.querySelector('.recipe-header-title');
+    if(hdr) hdr.textContent=getR(rid).title;
+    updateTOCPanel(rid);
+  });
+
+  // Personen (linker pagina)
+  document.querySelector(`.persons-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
+    const r2=getR(rid);r2.portions=parseInt(e.target.value)||1;save();
+    refreshRight(r2);
+    const portInp=document.querySelector(`.port-inp[data-rid="${rid}"]`);
+    if(portInp) portInp.value=r2.portions;
+  });
+
+  // Bereidingstijd
+  document.querySelector(`.prep-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
+    getR(rid).prepTime=parseInt(e.target.value)||null;save();
+  });
+
+  // Keukenapparatuur
+  const eqBtn=document.querySelector(`.eq-add[data-rid="${rid}"]`);
+  const eqIn=document.getElementById(`eq-${rid}`);
+  if(eqBtn&&eqIn){
+    const doEq=()=>{
+      const v=eqIn.value.trim();if(!v) return;
+      const r2=getR(rid);if(!r2.equipment.includes(v)) r2.equipment.push(v);
+      eqIn.value='';save();refreshLeft(r2);
+    };
+    eqBtn.addEventListener('click',doEq);
+    eqIn.addEventListener('keydown',e=>{if(e.key==='Enter')doEq()});
+  }
+  document.querySelectorAll(`.chip-x[data-rid="${rid}"]`).forEach(b=>{
+    b.addEventListener('click',()=>{
+      const r2=getR(rid);r2.equipment=r2.equipment.filter(e=>e!==b.dataset.eq);
+      save();refreshLeft(r2);
     });
+  });
 
-    // Prep time
-    document.querySelector(`.prep-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
-      getR(rid).prepTime=parseInt(e.target.value)||null;save();
+  // Ingrediënten
+  const iBtn=document.querySelector(`.ing-add[data-rid="${rid}"]`);
+  if(iBtn){
+    const doIng=()=>{
+      const nEl=document.getElementById(`in-${rid}`),aEl=document.getElementById(`ia-${rid}`),uEl=document.getElementById(`iu-${rid}`);
+      const name=nEl.value.trim();if(!name){nEl.focus();return;}
+      getR(rid).ingredients.push({id:Date.now(),name,amount:parseFloat(aEl.value)||0,unit:uEl.value,emoji:ingEmoji(name)});
+      nEl.value='';aEl.value='';uEl.value='g';save();
+      const r2=getR(rid);refreshLeft(r2);refreshRight(r2);
+    };
+    iBtn.addEventListener('click',doIng);
+    document.getElementById(`in-${rid}`)?.addEventListener('keydown',e=>{if(e.key==='Enter')doIng()});
+  }
+  document.querySelectorAll(`.del-btn[data-rid="${rid}"]`).forEach(b=>{
+    b.addEventListener('click',()=>{
+      const r2=getR(rid);r2.ingredients=r2.ingredients.filter(i=>i.id!=b.dataset.iid);
+      save();refreshLeft(r2);refreshRight(r2);
     });
+  });
 
-    // Equipment
-    const eqBtn=document.querySelector(`.eq-add[data-rid="${rid}"]`);
-    const eqIn=document.getElementById(`eq-${rid}`);
-    if(eqBtn&&eqIn){
-      const doEq=()=>{
-        const v=eqIn.value.trim();if(!v) return;
-        const r2=getR(rid);if(!r2.equipment.includes(v)) r2.equipment.push(v);
-        eqIn.value='';save();refreshLeft(r2);
-      };
-      eqBtn.addEventListener('click',doEq);
-      eqIn.addEventListener('keydown',e=>{if(e.key==='Enter')doEq()});
-    }
-    document.querySelectorAll(`.chip-x[data-rid="${rid}"]`).forEach(b=>{
-      b.addEventListener('click',()=>{
-        const r2=getR(rid);r2.equipment=r2.equipment.filter(e=>e!==b.dataset.eq);
-        save();refreshLeft(r2);
-      });
-    });
+  // Stappen
+  bindSteps(r);
 
-    // Ingredients
-    const iBtn=document.querySelector(`.ing-add[data-rid="${rid}"]`);
-    if(iBtn){
-      const doIng=()=>{
-        const nEl=document.getElementById(`in-${rid}`),aEl=document.getElementById(`ia-${rid}`),uEl=document.getElementById(`iu-${rid}`);
-        const name=nEl.value.trim();if(!name){nEl.focus();return;}
-        getR(rid).ingredients.push({id:Date.now(),name,amount:parseFloat(aEl.value)||0,unit:uEl.value,emoji:ingEmoji(name)});
-        nEl.value='';aEl.value='';uEl.value='g';save();
-        const r2=getR(rid);refreshLeft(r2);refreshRight(r2);
-      };
-      iBtn.addEventListener('click',doIng);
-      document.getElementById(`in-${rid}`)?.addEventListener('keydown',e=>{if(e.key==='Enter')doIng()});
-    }
-    document.querySelectorAll(`.del-btn[data-rid="${rid}"]`).forEach(b=>{
-      b.addEventListener('click',()=>{
-        const r2=getR(rid);r2.ingredients=r2.ingredients.filter(i=>i.id!=b.dataset.iid);
-        save();refreshLeft(r2);refreshRight(r2);
-      });
-    });
+  // Porties (rechter pagina)
+  document.querySelector(`.port-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
+    const r2=getR(rid);r2.portions=parseInt(e.target.value)||1;save();refreshRight(r2);
+    const persInp=document.querySelector(`.persons-inp[data-rid="${rid}"]`);
+    if(persInp) persInp.value=r2.portions;
+  });
 
-    // Steps
-    bindSteps(r);
-
-    // Portions
-    document.querySelector(`.port-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
-      getR(rid).portions=parseInt(e.target.value)||1;save();refreshRight(getR(rid));
-    });
-
-    // Per portie / totaal
-    document.querySelectorAll(`.mode-btn[data-rid="${rid}"]`).forEach(b=>{
-      b.addEventListener('click',()=>{
-        document.querySelectorAll(`.mode-btn[data-rid="${rid}"]`).forEach(x2=>x2.classList.remove('active'));
-        b.classList.add('active');
-        const r2=getR(rid),pp=b.dataset.mode==='pp',nr=calcNutr(r2.ingredients||[]);
-        document.getElementById(`nt-${rid}`).innerHTML=nutrRows(nr,r2.portions||1,pp);
-        const kEl=document.getElementById(`dkc-${rid}`);
-        if(kEl) kEl.textContent=Math.round(pp?nr.kcal/(r2.portions||1):nr.kcal);
-      });
+  // Per portie / totaal
+  document.querySelectorAll(`.mode-btn[data-rid="${rid}"]`).forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll(`.mode-btn[data-rid="${rid}"]`).forEach(x2=>x2.classList.remove('active'));
+      b.classList.add('active');
+      const r2=getR(rid),pp=b.dataset.mode==='pp',nr=calcNutr(r2.ingredients||[]);
+      document.getElementById(`nt-${rid}`).innerHTML=nutrRows(nr,r2.portions||1,pp);
+      const kEl=document.getElementById(`dkc-${rid}`);
+      if(kEl) kEl.textContent=Math.round(pp?nr.kcal/(r2.portions||1):nr.kcal);
     });
   });
 }
@@ -926,12 +943,12 @@ function refreshRight(r){
   }
 }
 function refreshSteps(r){
-  const el=document.getElementById(`sl-${r.id}`);
+  const el=document.getElementById(`rc2-${r.id}`);
   if(el){
     const tmp=document.createElement('div');
     tmp.innerHTML=rightPageHTML(r,spreadIdx*2+1);
-    const newUl=tmp.querySelector(`#sl-${r.id}`);
-    if(newUl) el.outerHTML=newUl.outerHTML;
+    const newCol=tmp.querySelector(`#rc2-${r.id}`);
+    if(newCol) el.outerHTML=newCol.outerHTML;
     bindSteps(r);
   }
 }
