@@ -541,14 +541,23 @@ function save(){
   },500);
 }
 
+// Zorgt dat elk recept alle verplichte velden heeft (compatibiliteit met oude opgeslagen data)
+function norm(r){
+  r.equipment =r.equipment ||[];
+  r.ingredients=r.ingredients||[];
+  r.steps      =r.steps      ||[];
+  r.portions   =r.portions   ||4;
+  return r;
+}
+
 // Boot: local first, firebase sync once
 (()=>{
-  try{const s=localStorage.getItem('kb_data');if(s) recipes=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem('kb_data');if(s) recipes=JSON.parse(s).map(norm);}catch{}
   render();
   onValue(dbRef,snap=>{
     const val=snap.val();
     if(val){
-      recipes=Object.values(val).sort((a,b)=>(a._ord??0)-(b._ord??0));
+      recipes=Object.values(val).sort((a,b)=>(a._ord??0)-(b._ord??0)).map(norm);
       recipes.forEach(r=>{delete r._ord});
       localStorage.setItem('kb_data',JSON.stringify(recipes));
       render();
@@ -968,6 +977,7 @@ function doAddEquipment(rid){
   const v=eqIn.value.trim();
   if(!v){eqIn.focus();return;}
   const r=getR(rid);if(!r) return;
+  if(!r.equipment) r.equipment=[];
   if(!r.equipment.includes(v)) r.equipment.push(v);
   eqIn.value='';save();refreshLeft(r);
   document.getElementById(`eq-${rid}`)?.focus();
@@ -1024,6 +1034,7 @@ window._kb={
   addEquip:doAddEquipment,
   addStep(rid){
     const r=getR(rid);if(!r) return;
+    if(!r.steps) r.steps=[];
     r.steps.push({id:Date.now(),text:'',time:null,done:false});
     save();refreshSteps(r);
   }
