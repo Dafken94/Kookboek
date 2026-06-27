@@ -705,7 +705,7 @@ function leftPageHTML(r, pgn){
       <div class="sec-h">🍳 Keukenapparatuur</div>
       <div class="row-add">
         <input id="eq-${r.id}" data-rid="${r.id}" placeholder="bv. oven, mixer…">
-        <button class="btn-xs eq-add" data-rid="${r.id}">+</button>
+        <button class="btn-xs" onclick="window._kb&&window._kb.addEquip('${r.id}')">+</button>
       </div>
       <div class="chips" id="chips-${r.id}">${chips}</div>
 
@@ -757,7 +757,7 @@ function rightPageHTML(r, pgn){
       <div class="r-col" id="rc2-${r.id}">
         <div class="col-h">📋 Bereidingsstappen</div>
         <ul class="steps-ul" id="sl-${r.id}">${steps}</ul>
-        <button class="btn-add-step" data-rid="${r.id}">+ Stap toevoegen</button>
+        <button class="btn-add-step" onclick="window._kb&&window._kb.addStep('${r.id}')">+ Stap toevoegen</button>
       </div>
       <div class="r-col" id="rc3-${r.id}">
         <div class="col-h">🥗 Voedingswaarden</div>
@@ -834,16 +834,14 @@ function setupDelegation(){
     const pL=document.getElementById('pageLeft');
     const pR=document.getElementById('pageRight');
 
-    // Linker pagina
+    // Linker pagina (chip-x, ing-add, del-btn — eq-add via onclick)
     if(pL&&pL.contains(e.target)){
       const btn=e.target.closest('button');
       if(!btn) return;
       const rid=btn.dataset.rid; if(!rid) return;
       const r=getR(rid); if(!r) return;
 
-      if(btn.classList.contains('eq-add')){
-        doAddEquipment(rid);
-      } else if(btn.classList.contains('chip-x')){
+      if(btn.classList.contains('chip-x')){
         r.equipment=r.equipment.filter(eq=>eq!==btn.dataset.eq);
         save();refreshLeft(r);
       } else if(btn.classList.contains('ing-add')){
@@ -854,17 +852,14 @@ function setupDelegation(){
       }
     }
 
-    // Rechter pagina
+    // Rechter pagina (s-done, s-del, mode-btn — btn-add-step via onclick)
     if(pR&&pR.contains(e.target)){
       const btn=e.target.closest('button');
       if(!btn) return;
       const rid=btn.dataset.rid; if(!rid) return;
       const r=getR(rid); if(!r) return;
 
-      if(btn.classList.contains('btn-add-step')){
-        r.steps.push({id:Date.now(),text:'',time:null,done:false});
-        save();refreshSteps(r);
-      } else if(btn.classList.contains('s-done')){
+      if(btn.classList.contains('s-done')){
         const s=r.steps.find(s=>s.id==btn.dataset.sid);
         if(s){s.done=!s.done;save();refreshSteps(r);}
       } else if(btn.classList.contains('s-del')){
@@ -1023,6 +1018,16 @@ function refreshSteps(r){
     if(newCol) el.outerHTML=newCol.outerHTML;
   }
 }
+
+// ── WINDOW BRIDGE (onclick in HTML heeft global scope nodig) ──
+window._kb={
+  addEquip:doAddEquipment,
+  addStep(rid){
+    const r=getR(rid);if(!r) return;
+    r.steps.push({id:Date.now(),text:'',time:null,done:false});
+    save();refreshSteps(r);
+  }
+};
 
 setupDelegation();
 
