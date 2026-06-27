@@ -704,14 +704,14 @@ function leftPageHTML(r, pgn){
 
       <div class="sec-h">🍳 Keukenapparatuur</div>
       <div class="row-add">
-        <input id="eq-${r.id}" placeholder="bv. oven, mixer…">
+        <input id="eq-${r.id}" data-rid="${r.id}" placeholder="bv. oven, mixer…">
         <button class="btn-xs eq-add" data-rid="${r.id}">+</button>
       </div>
       <div class="chips" id="chips-${r.id}">${chips}</div>
 
       <div class="sec-h">🥕 Ingrediënten</div>
       <div class="ing-form">
-        <input id="in-${r.id}" placeholder="Naam">
+        <input id="in-${r.id}" data-rid="${r.id}" placeholder="Naam">
         <input id="ia-${r.id}" type="number" placeholder="100">
         <select id="iu-${r.id}">
           <option>g</option><option>ml</option><option>el</option>
@@ -818,149 +818,167 @@ function drawDonut(id,n,por){
   }
 }
 
-// ── BIND PAGE ─────────────────────────────────────────────────
-// Bindt enkel de linker pagina (receptinfo). Veilig om meerdere keren aan te roepen.
-function bindLeftPage(r){
-  const rid=r.id;
-
-  document.querySelector(`.recipe-title-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
-    getR(rid).title=e.target.value.trim()||'Naamloos';save();
-    const hdr=document.querySelector('.recipe-header-title');
-    if(hdr) hdr.textContent=getR(rid).title;
-    updateTOCPanel(rid);
-  });
-
-  document.querySelector(`.persons-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
-    const r2=getR(rid);r2.portions=parseInt(e.target.value)||1;save();
-    refreshNutrition(r2);
-    const portInp=document.querySelector(`.port-inp[data-rid="${rid}"]`);
-    if(portInp) portInp.value=r2.portions;
-  });
-
-  document.querySelector(`.prep-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
-    getR(rid).prepTime=parseInt(e.target.value)||null;save();
-  });
-
-  const eqBtn=document.querySelector(`.eq-add[data-rid="${rid}"]`);
-  const eqIn=document.getElementById(`eq-${rid}`);
-  if(eqBtn&&eqIn){
-    const doEq=()=>{
-      const v=eqIn.value.trim();if(!v) return;
-      const r2=getR(rid);if(!r2.equipment.includes(v)) r2.equipment.push(v);
-      eqIn.value='';save();refreshLeft(r2);
-    };
-    eqBtn.addEventListener('click',doEq);
-    eqIn.addEventListener('keydown',e=>{if(e.key==='Enter')doEq()});
-  }
-
-  document.querySelectorAll(`.chip-x[data-rid="${rid}"]`).forEach(b=>{
-    b.addEventListener('click',()=>{
-      const r2=getR(rid);r2.equipment=r2.equipment.filter(e=>e!==b.dataset.eq);
-      save();refreshLeft(r2);
-    });
-  });
-
-  const iBtn=document.querySelector(`.ing-add[data-rid="${rid}"]`);
-  if(iBtn){
-    const doIng=()=>{
-      const nEl=document.getElementById(`in-${rid}`),aEl=document.getElementById(`ia-${rid}`),uEl=document.getElementById(`iu-${rid}`);
-      const name=nEl.value.trim();if(!name){nEl.focus();return;}
-      getR(rid).ingredients.push({id:Date.now(),name,amount:parseFloat(aEl.value)||0,unit:uEl.value,emoji:ingEmoji(name)});
-      nEl.value='';aEl.value='';uEl.value='g';save();
-      const r2=getR(rid);refreshLeft(r2);refreshNutrition(r2);
-    };
-    iBtn.addEventListener('click',doIng);
-    document.getElementById(`in-${rid}`)?.addEventListener('keydown',e=>{if(e.key==='Enter')doIng()});
-  }
-
-  document.querySelectorAll(`.del-btn[data-rid="${rid}"]`).forEach(b=>{
-    b.addEventListener('click',()=>{
-      const r2=getR(rid);r2.ingredients=r2.ingredients.filter(i=>i.id!=b.dataset.iid);
-      save();refreshLeft(r2);refreshNutrition(r2);
-    });
-  });
-}
-
-// Bindt enkel de rechter pagina (stappen + voeding). Wordt maar 1x aangeroepen per render.
-function bindRightPage(r){
-  const rid=r.id;
-
-  requestAnimationFrame(()=>drawDonut(rid,calcNutr(r.ingredients||[]),r.portions||1));
-
-  bindSteps(r);
-
-  document.querySelector(`.port-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
-    const r2=getR(rid);r2.portions=parseInt(e.target.value)||1;save();refreshNutrition(r2);
-    const persInp=document.querySelector(`.persons-inp[data-rid="${rid}"]`);
-    if(persInp) persInp.value=r2.portions;
-  });
-
-  document.querySelectorAll(`.mode-btn[data-rid="${rid}"]`).forEach(b=>{
-    b.addEventListener('click',()=>{
-      document.querySelectorAll(`.mode-btn[data-rid="${rid}"]`).forEach(x2=>x2.classList.remove('active'));
-      b.classList.add('active');
-      const r2=getR(rid),pp=b.dataset.mode==='pp',nr=calcNutr(r2.ingredients||[]);
-      document.getElementById(`nt-${rid}`).innerHTML=nutrRows(nr,r2.portions||1,pp);
-      const kEl=document.getElementById(`dkc-${rid}`);
-      if(kEl) kEl.textContent=Math.round(pp?nr.kcal/(r2.portions||1):nr.kcal);
-    });
-  });
-}
-
+// ── BIND PAGE (alleen donut tekenen; events via delegation) ───
 function bindPage(r){
-  bindLeftPage(r);
-  bindRightPage(r);
+  requestAnimationFrame(()=>drawDonut(r.id,calcNutr(r.ingredients||[]),r.portions||1));
 }
 
-function bindSteps(r){
-  const rid=r.id;
-  document.querySelector(`.btn-add-step[data-rid="${rid}"]`)?.addEventListener('click',()=>{
-    getR(rid).steps.push({id:Date.now(),text:'',time:null,done:false});
-    save();refreshSteps(getR(rid));
+// ── EVENT DELEGATION ─────────────────────────────────────────
+// Eén keer opgezet op de stabiele container-elementen.
+// Werkt voor alle recepten (nieuw én bestaand) zonder rebinding.
+let _dragSrc=null;
+function setupDelegation(){
+  const pL=document.getElementById('pageLeft');
+  const pR=document.getElementById('pageRight');
+
+  // ── LINKER PAGINA: klik ──
+  pL.addEventListener('click',e=>{
+    const btn=e.target.closest('button');
+    if(!btn) return;
+    const rid=btn.dataset.rid; if(!rid) return;
+    const r=getR(rid); if(!r) return;
+
+    if(btn.classList.contains('eq-add')){
+      doAddEquipment(rid);
+    } else if(btn.classList.contains('chip-x')){
+      r.equipment=r.equipment.filter(eq=>eq!==btn.dataset.eq);
+      save();refreshLeft(r);document.getElementById(`eq-${rid}`)?.focus();
+    } else if(btn.classList.contains('ing-add')){
+      doAddIngredient(rid);
+    } else if(btn.classList.contains('del-btn')){
+      r.ingredients=r.ingredients.filter(i=>i.id!=btn.dataset.iid);
+      save();refreshLeft(r);refreshNutrition(r);
+    }
   });
-  document.querySelectorAll(`.s-done[data-rid="${rid}"]`).forEach(b=>{
-    b.addEventListener('click',()=>{
-      const s=getR(rid).steps.find(s=>s.id==b.dataset.sid);
-      if(s){s.done=!s.done;save();refreshSteps(getR(rid));}
-    });
+
+  // ── LINKER PAGINA: enter in invoervelden ──
+  pL.addEventListener('keydown',e=>{
+    if(e.key!=='Enter') return;
+    const rid=e.target.dataset.rid; if(!rid) return;
+    if(e.target.id===`eq-${rid}`){e.preventDefault();doAddEquipment(rid);}
+    else if(e.target.id===`in-${rid}`){e.preventDefault();doAddIngredient(rid);}
   });
-  document.querySelectorAll(`.s-del[data-rid="${rid}"]`).forEach(b=>{
-    b.addEventListener('click',()=>{
-      const r2=getR(rid);r2.steps=r2.steps.filter(s=>s.id!=b.dataset.sid);
-      save();refreshSteps(r2);
-    });
+
+  // ── LINKER PAGINA: wijzigingen in inputs ──
+  pL.addEventListener('change',e=>{
+    const rid=e.target.dataset.rid; if(!rid) return;
+    const r=getR(rid); if(!r) return;
+    if(e.target.classList.contains('recipe-title-inp')){
+      r.title=e.target.value.trim()||'Naamloos';save();
+      const hdr=document.querySelector('.recipe-header-title');
+      if(hdr) hdr.textContent=r.title;
+      updateTOCPanel(rid);
+    } else if(e.target.classList.contains('persons-inp')){
+      r.portions=parseInt(e.target.value)||1;save();refreshNutrition(r);
+      const p=document.querySelector(`.port-inp[data-rid="${rid}"]`);if(p) p.value=r.portions;
+    } else if(e.target.classList.contains('prep-inp')){
+      r.prepTime=parseInt(e.target.value)||null;save();
+    }
   });
-  document.querySelectorAll(`.step-ta[data-rid="${rid}"]`).forEach(ta=>{
-    ta.addEventListener('input',()=>{
-      const s=getR(rid).steps.find(s=>s.id==ta.dataset.sid);
-      if(s){s.text=ta.value;save();}
-      ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';
-    });
+
+  // ── RECHTER PAGINA: klik ──
+  pR.addEventListener('click',e=>{
+    const btn=e.target.closest('button');
+    if(!btn) return;
+    const rid=btn.dataset.rid; if(!rid) return;
+    const r=getR(rid); if(!r) return;
+
+    if(btn.classList.contains('btn-add-step')){
+      r.steps.push({id:Date.now(),text:'',time:null,done:false});
+      save();refreshSteps(r);
+    } else if(btn.classList.contains('s-done')){
+      const s=r.steps.find(s=>s.id==btn.dataset.sid);
+      if(s){s.done=!s.done;save();refreshSteps(r);}
+    } else if(btn.classList.contains('s-del')){
+      r.steps=r.steps.filter(s=>s.id!=btn.dataset.sid);
+      save();refreshSteps(r);
+    } else if(btn.classList.contains('mode-btn')){
+      pR.querySelectorAll(`.mode-btn[data-rid="${rid}"]`).forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const pp=btn.dataset.mode==='pp',nr=calcNutr(r.ingredients||[]);
+      const ntEl=document.getElementById(`nt-${rid}`);
+      const kEl=document.getElementById(`dkc-${rid}`);
+      if(ntEl) ntEl.innerHTML=nutrRows(nr,r.portions||1,pp);
+      if(kEl) kEl.textContent=Math.round(pp?nr.kcal/(r.portions||1):nr.kcal);
+    }
   });
-  document.querySelectorAll(`.step-t-inp[data-rid="${rid}"]`).forEach(inp=>{
-    inp.addEventListener('change',()=>{
-      const s=getR(rid).steps.find(s=>s.id==inp.dataset.sid);
-      if(s){s.time=parseInt(inp.value)||null;save();}
-    });
+
+  // ── RECHTER PAGINA: wijzigingen in inputs ──
+  pR.addEventListener('change',e=>{
+    const rid=e.target.dataset.rid; if(!rid) return;
+    const r=getR(rid); if(!r) return;
+    if(e.target.classList.contains('port-inp')){
+      r.portions=parseInt(e.target.value)||1;save();refreshNutrition(r);
+      const p=document.querySelector(`.persons-inp[data-rid="${rid}"]`);if(p) p.value=r.portions;
+    } else if(e.target.classList.contains('step-t-inp')){
+      const s=r.steps.find(s=>s.id==e.target.dataset.sid);
+      if(s){s.time=parseInt(e.target.value)||null;save();}
+    }
   });
-  // Drag & drop
-  let src=null;
-  document.querySelectorAll(`.step-li[data-rid="${rid}"]`).forEach(li=>{
-    li.addEventListener('dragstart',e=>{src=li;e.dataTransfer.effectAllowed='move';setTimeout(()=>li.style.opacity='.35',0)});
-    li.addEventListener('dragend',()=>{li.style.opacity=''});
-    li.addEventListener('dragover',e=>{e.preventDefault();li.classList.add('drag-over')});
-    li.addEventListener('dragleave',()=>li.classList.remove('drag-over'));
-    li.addEventListener('drop',e=>{
-      e.preventDefault();li.classList.remove('drag-over');
-      if(src===li) return;
-      const r2=getR(rid);
-      const si=r2.steps.findIndex(s=>s.id==src.dataset.sid);
-      const di=r2.steps.findIndex(s=>s.id==li.dataset.sid);
-      if(si<0||di<0) return;
-      const[m]=r2.steps.splice(si,1);r2.steps.splice(di,0,m);
-      save();refreshSteps(r2);
-    });
+
+  // ── RECHTER PAGINA: tekst in stapomschrijving ──
+  pR.addEventListener('input',e=>{
+    if(!e.target.classList.contains('step-ta')) return;
+    const rid=e.target.dataset.rid; if(!rid) return;
+    const r=getR(rid); if(!r) return;
+    const s=r.steps.find(s=>s.id==e.target.dataset.sid);
+    if(s){s.text=e.target.value;save();}
+    e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px';
   });
+
+  // ── RECHTER PAGINA: drag & drop stappen ──
+  pR.addEventListener('dragstart',e=>{
+    const li=e.target.closest('.step-li');if(!li) return;
+    _dragSrc=li;e.dataTransfer.effectAllowed='move';
+    setTimeout(()=>li.style.opacity='.35',0);
+  });
+  pR.addEventListener('dragend',e=>{
+    const li=e.target.closest('.step-li');if(li) li.style.opacity='';
+    _dragSrc=null;
+  });
+  pR.addEventListener('dragover',e=>{
+    e.preventDefault();
+    const li=e.target.closest('.step-li');
+    if(li&&li!==_dragSrc) li.classList.add('drag-over');
+  });
+  pR.addEventListener('dragleave',e=>{
+    const li=e.target.closest('.step-li');if(li) li.classList.remove('drag-over');
+  });
+  pR.addEventListener('drop',e=>{
+    e.preventDefault();
+    const li=e.target.closest('.step-li');
+    if(!li||!_dragSrc||li===_dragSrc) return;
+    li.classList.remove('drag-over');
+    const rid=_dragSrc.dataset.rid;
+    const r=getR(rid);if(!r) return;
+    const si=r.steps.findIndex(s=>s.id==_dragSrc.dataset.sid);
+    const di=r.steps.findIndex(s=>s.id==li.dataset.sid);
+    if(si<0||di<0) return;
+    const[m]=r.steps.splice(si,1);r.steps.splice(di,0,m);
+    save();refreshSteps(r);
+  });
+}
+
+function doAddEquipment(rid){
+  const eqIn=document.getElementById(`eq-${rid}`);if(!eqIn) return;
+  const v=eqIn.value.trim();if(!v) return;
+  const r=getR(rid);if(!r) return;
+  if(!r.equipment.includes(v)) r.equipment.push(v);
+  eqIn.value='';save();refreshLeft(r);
+  document.getElementById(`eq-${rid}`)?.focus();
+}
+
+function doAddIngredient(rid){
+  const nEl=document.getElementById(`in-${rid}`);
+  const aEl=document.getElementById(`ia-${rid}`);
+  const uEl=document.getElementById(`iu-${rid}`);
+  if(!nEl) return;
+  const name=nEl.value.trim();if(!name){nEl.focus();return;}
+  const r=getR(rid);if(!r) return;
+  r.ingredients.push({id:Date.now(),name,amount:parseFloat(aEl?.value)||0,unit:uEl?.value||'g',emoji:ingEmoji(name)});
+  nEl.value='';if(aEl) aEl.value='';if(uEl) uEl.value='g';
+  save();refreshLeft(r);refreshNutrition(r);
+  document.getElementById(`in-${rid}`)?.focus();
 }
 
 // Partial refreshes
@@ -971,7 +989,6 @@ function refreshLeft(r){
     tmp.innerHTML=leftPageHTML(r,spreadIdx*2);
     info.outerHTML=tmp.querySelector(`#rinfo-${r.id}`).outerHTML;
     updateTOCPanel(r.id);
-    bindLeftPage(r);  // alleen linker pagina, nooit de stappen-kolom
   }
 }
 function refreshNutrition(r){
@@ -994,9 +1011,10 @@ function refreshSteps(r){
     tmp.innerHTML=rightPageHTML(r,spreadIdx*2+1);
     const newCol=tmp.querySelector(`#rc2-${r.id}`);
     if(newCol) el.outerHTML=newCol.outerHTML;
-    bindSteps(r);
   }
 }
+
+setupDelegation();
 
 // ── TOOLBAR ───────────────────────────────────────────────────
 document.getElementById('prevBtn').addEventListener('click',()=>flip(-1));
