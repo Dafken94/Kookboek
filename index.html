@@ -778,13 +778,10 @@ function drawDonut(id,n,por){
 }
 
 // ── BIND PAGE ─────────────────────────────────────────────────
-function bindPage(r){
+// Bindt enkel de linker pagina (receptinfo). Veilig om meerdere keren aan te roepen.
+function bindLeftPage(r){
   const rid=r.id;
 
-  // Draw donut (canvas, needs to happen after element is in DOM)
-  requestAnimationFrame(()=>drawDonut(rid,calcNutr(r.ingredients||[]),r.portions||1));
-
-  // Title
   document.querySelector(`.recipe-title-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
     getR(rid).title=e.target.value.trim()||'Naamloos';save();
     const hdr=document.querySelector('.recipe-header-title');
@@ -792,20 +789,17 @@ function bindPage(r){
     updateTOCPanel(rid);
   });
 
-  // Personen (linker pagina)
   document.querySelector(`.persons-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
     const r2=getR(rid);r2.portions=parseInt(e.target.value)||1;save();
-    refreshRight(r2);
+    refreshNutrition(r2);
     const portInp=document.querySelector(`.port-inp[data-rid="${rid}"]`);
     if(portInp) portInp.value=r2.portions;
   });
 
-  // Bereidingstijd
   document.querySelector(`.prep-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
     getR(rid).prepTime=parseInt(e.target.value)||null;save();
   });
 
-  // Keukenapparatuur
   const eqBtn=document.querySelector(`.eq-add[data-rid="${rid}"]`);
   const eqIn=document.getElementById(`eq-${rid}`);
   if(eqBtn&&eqIn){
@@ -817,6 +811,7 @@ function bindPage(r){
     eqBtn.addEventListener('click',doEq);
     eqIn.addEventListener('keydown',e=>{if(e.key==='Enter')doEq()});
   }
+
   document.querySelectorAll(`.chip-x[data-rid="${rid}"]`).forEach(b=>{
     b.addEventListener('click',()=>{
       const r2=getR(rid);r2.equipment=r2.equipment.filter(e=>e!==b.dataset.eq);
@@ -824,7 +819,6 @@ function bindPage(r){
     });
   });
 
-  // Ingrediënten
   const iBtn=document.querySelector(`.ing-add[data-rid="${rid}"]`);
   if(iBtn){
     const doIng=()=>{
@@ -832,29 +826,34 @@ function bindPage(r){
       const name=nEl.value.trim();if(!name){nEl.focus();return;}
       getR(rid).ingredients.push({id:Date.now(),name,amount:parseFloat(aEl.value)||0,unit:uEl.value,emoji:ingEmoji(name)});
       nEl.value='';aEl.value='';uEl.value='g';save();
-      const r2=getR(rid);refreshLeft(r2);refreshRight(r2);
+      const r2=getR(rid);refreshLeft(r2);refreshNutrition(r2);
     };
     iBtn.addEventListener('click',doIng);
     document.getElementById(`in-${rid}`)?.addEventListener('keydown',e=>{if(e.key==='Enter')doIng()});
   }
+
   document.querySelectorAll(`.del-btn[data-rid="${rid}"]`).forEach(b=>{
     b.addEventListener('click',()=>{
       const r2=getR(rid);r2.ingredients=r2.ingredients.filter(i=>i.id!=b.dataset.iid);
-      save();refreshLeft(r2);refreshRight(r2);
+      save();refreshLeft(r2);refreshNutrition(r2);
     });
   });
+}
 
-  // Stappen
+// Bindt enkel de rechter pagina (stappen + voeding). Wordt maar 1x aangeroepen per render.
+function bindRightPage(r){
+  const rid=r.id;
+
+  requestAnimationFrame(()=>drawDonut(rid,calcNutr(r.ingredients||[]),r.portions||1));
+
   bindSteps(r);
 
-  // Porties (rechter pagina)
   document.querySelector(`.port-inp[data-rid="${rid}"]`)?.addEventListener('change',e=>{
-    const r2=getR(rid);r2.portions=parseInt(e.target.value)||1;save();refreshRight(r2);
+    const r2=getR(rid);r2.portions=parseInt(e.target.value)||1;save();refreshNutrition(r2);
     const persInp=document.querySelector(`.persons-inp[data-rid="${rid}"]`);
     if(persInp) persInp.value=r2.portions;
   });
 
-  // Per portie / totaal
   document.querySelectorAll(`.mode-btn[data-rid="${rid}"]`).forEach(b=>{
     b.addEventListener('click',()=>{
       document.querySelectorAll(`.mode-btn[data-rid="${rid}"]`).forEach(x2=>x2.classList.remove('active'));
@@ -865,6 +864,11 @@ function bindPage(r){
       if(kEl) kEl.textContent=Math.round(pp?nr.kcal/(r2.portions||1):nr.kcal);
     });
   });
+}
+
+function bindPage(r){
+  bindLeftPage(r);
+  bindRightPage(r);
 }
 
 function bindSteps(r){
@@ -926,10 +930,10 @@ function refreshLeft(r){
     tmp.innerHTML=leftPageHTML(r,spreadIdx*2);
     info.outerHTML=tmp.querySelector(`#rinfo-${r.id}`).outerHTML;
     updateTOCPanel(r.id);
-    bindPage(r);
+    bindLeftPage(r);  // alleen linker pagina, nooit de stappen-kolom
   }
 }
-function refreshRight(r){
+function refreshNutrition(r){
   const c2=document.getElementById(`rc2-${r.id}`);
   const c3=document.getElementById(`rc3-${r.id}`);
   if(c3){
